@@ -1,6 +1,41 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { productService } from '../services/productService'
-import { groupReordersBySupplier } from '../services/whatsappService'
+
+// Group low-stock products by their supplier so the reorder modal can render one
+// card per supplier with suggested order quantities and estimated totals.
+const groupReordersBySupplier = (products = []) => {
+  const groups = {}
+
+  for (const p of products) {
+    if (!p.supplier_id || !p.suppliers) continue
+
+    const key = p.supplier_id
+    if (!groups[key]) {
+      groups[key] = {
+        supplier: p.suppliers,
+        items: [],
+        estimatedTotal: 0,
+        hasPhone: !!p.suppliers.phone,
+      }
+    }
+
+    const deficit      = Math.max(0, p.reorder_level - p.quantity)
+    const suggestedQty = Math.max(deficit, p.reorder_level)
+
+    groups[key].items.push({
+      product_name:  p.product_name,
+      product_code:  p.product_code,
+      unit:          p.unit,
+      current_stock: p.quantity,
+      reorder_level: p.reorder_level,
+      suggested_qty: suggestedQty,
+      buying_price:  p.buying_price,
+    })
+    groups[key].estimatedTotal += suggestedQty * (p.buying_price || 0)
+  }
+
+  return Object.values(groups)
+}
 
 // Reads VITE_REORDER_TIME from .env — defaults to "17:30" (5:30 PM)
 const [TRIGGER_HOUR, TRIGGER_MIN] = (import.meta.env.VITE_REORDER_TIME || '17:30')

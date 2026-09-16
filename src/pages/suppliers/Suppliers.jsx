@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Phone, Mail, MapPin, Truck, MessageCircle, CheckCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, Phone, Mail, MapPin, Truck } from 'lucide-react'
 import { supplierService } from '../../services/supplierService'
-import { sendTextMessage, cleanPhoneNumber } from '../../services/whatsappService'
 import Modal from '../../components/shared/Modal'
 import Button from '../../components/shared/Button'
 import SearchBar from '../../components/shared/SearchBar'
@@ -16,10 +15,6 @@ const SupplierForm = ({ initial = {}, onSave, onCancel, saving }) => {
   })
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Show the cleaned international format as a hint
-  const cleanedPhone = form.phone ? cleanPhoneNumber(form.phone) : ''
-  const phoneValid   = cleanedPhone.startsWith('94') && cleanedPhone.length === 11
-
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
@@ -32,31 +27,17 @@ const SupplierForm = ({ initial = {}, onSave, onCancel, saving }) => {
           <input className="input-base" value={form.contact_person} onChange={set('contact_person')} />
         </div>
 
-        {/* Phone — highlighted as critical for WhatsApp */}
         <div className="form-group">
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Phone size={12} />
-            WhatsApp Phone Number
-            <span style={{ fontSize: 10, background: '#fff7ed', color: '#f97316', padding: '1px 6px', borderRadius: 99, fontWeight: 700, border: '1px solid #fed7aa' }}>
-              Required for reorders
-            </span>
+            Phone Number
           </label>
           <input
             className="input-base"
             value={form.phone}
             onChange={set('phone')}
             placeholder="0771234567 or +94771234567"
-            style={{ borderColor: form.phone && !phoneValid ? '#fca5a5' : undefined }}
           />
-          {form.phone && (
-            <div style={{ fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 5,
-              color: phoneValid ? '#16a34a' : '#dc2626' }}>
-              {phoneValid
-                ? <><CheckCircle size={11} /> WhatsApp ready: +{cleanedPhone}</>
-                : <><span>⚠</span> Format not recognised — use 07XXXXXXXX or +94XXXXXXXXX</>
-              }
-            </div>
-          )}
         </div>
 
         <div className="form-group">
@@ -98,9 +79,6 @@ const Suppliers = () => {
   const [modalType,   setModalType]   = useState(null)
   const [selected,    setSelected]    = useState(null)
   const [saving,      setSaving]      = useState(false)
-  const [testingId,   setTestingId]   = useState(null)  // supplier id currently being test-messaged
-  const [testResult,  setTestResult]  = useState({})    // { [id]: 'sent' | 'error' }
-
   const fetchSuppliers = () => {
     setLoading(true)
     supplierService.getAll({ search })
@@ -129,23 +107,6 @@ const Suppliers = () => {
     fetchSuppliers()
   }
 
-  // Send a quick test WhatsApp message to verify the number works
-  const handleTestWhatsApp = async (supplier) => {
-    setTestingId(supplier.id)
-    try {
-      await sendTextMessage(
-        supplier.phone,
-        `Hi ${supplier.supplier_name}, this is a test message from ${import.meta.env.VITE_BUSINESS_NAME || 'HardwareAI'}. Your number is correctly registered in our system. ✅`
-      )
-      setTestResult(prev => ({ ...prev, [supplier.id]: 'sent' }))
-    } catch (err) {
-      setTestResult(prev => ({ ...prev, [supplier.id]: 'error: ' + err.message }))
-    } finally {
-      setTestingId(null)
-    }
-  }
-
-  const withPhone    = suppliers.filter(s => s.phone)
   const withoutPhone = suppliers.filter(s => !s.phone)
 
   return (
@@ -155,27 +116,13 @@ const Suppliers = () => {
         <div>
           <h1 className="page-title">Suppliers</h1>
           <p className="page-subtitle">
-            {suppliers.length} suppliers · {withPhone.length} WhatsApp-enabled
+            {suppliers.length} supplier{suppliers.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Button icon={<Plus />} onClick={() => { setSelected(null); setModalType('add') }}>
           Add Supplier
         </Button>
       </div>
-
-      {/* WhatsApp coverage banner */}
-      {withoutPhone.length > 0 && (
-        <div style={{
-          background: '#fffbeb', border: '1px solid #fde68a',
-          borderRadius: 10, padding: '12px 18px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
-        }}>
-          <MessageCircle size={16} color="#d97706" />
-          <span style={{ color: '#92400e' }}>
-            <strong>{withoutPhone.length} supplier{withoutPhone.length !== 1 ? 's' : ''}</strong> have no phone number — add their numbers to enable automatic WhatsApp reorder messages.
-          </span>
-        </div>
-      )}
 
       {/* Search */}
       <div className="card" style={{ padding: '12px 20px', marginBottom: 20 }}>
@@ -186,7 +133,7 @@ const Suppliers = () => {
       <div className="grid-3" style={{ marginBottom: 20 }}>
         {[
           { label: 'Total Suppliers', value: suppliers.length, color: '#3b82f6' },
-          { label: 'WhatsApp Enabled', value: withPhone.length, color: '#25D366' },
+          { label: 'Active', value: suppliers.filter(s => s.status === 'active').length, color: '#22c55e' },
           { label: 'Missing Phone', value: withoutPhone.length, color: withoutPhone.length > 0 ? '#f59e0b' : '#22c55e' },
         ].map(c => (
           <div key={c.label} className="card" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -210,10 +157,6 @@ const Suppliers = () => {
             </div>
           </div>
         ) : suppliers.map(s => {
-          const cleanedPhone = s.phone ? cleanPhoneNumber(s.phone) : ''
-          const phoneValid   = cleanedPhone.startsWith('94') && cleanedPhone.length === 11
-          const tResult      = testResult[s.id]
-
           return (
             <div key={s.id} className="card" style={{ padding: '18px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -229,19 +172,6 @@ const Suppliers = () => {
                     }}>
                       {s.status}
                     </span>
-                    {/* WhatsApp badge */}
-                    {s.phone && (
-                      <span style={{
-                        fontSize: 11,
-                        background: phoneValid ? '#f0fdf4' : '#fef2f2',
-                        color: phoneValid ? '#16a34a' : '#dc2626',
-                        padding: '2px 8px', borderRadius: 99, fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 4,
-                      }}>
-                        <MessageCircle size={9} />
-                        {phoneValid ? 'WhatsApp ✓' : 'Invalid format'}
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -264,38 +194,11 @@ const Suppliers = () => {
                   </div>
                 )}
                 {s.phone ? (
-                  <div style={{ display: 'flex', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <Phone size={13} />{s.phone}
-                    </div>
-                    {/* Test WhatsApp button */}
-                    {phoneValid && (
-                      <button
-                        onClick={() => handleTestWhatsApp(s)}
-                        disabled={testingId === s.id}
-                        title="Send a test WhatsApp message"
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 4,
-                          fontSize: 11, padding: '3px 9px', borderRadius: 6,
-                          border: '1px solid #bbf7d0',
-                          background: tResult === 'sent' ? '#f0fdf4' : '#fff',
-                          color: tResult === 'sent' ? '#16a34a' : tResult?.startsWith('error') ? '#dc2626' : '#25D366',
-                          cursor: testingId === s.id ? 'not-allowed' : 'pointer',
-                          fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
-                        }}
-                      >
-                        {testingId === s.id ? (
-                          <Loader size={10} color="#25D366" />
-                        ) : (
-                          <MessageCircle size={10} />
-                        )}
-                        {tResult === 'sent' ? 'Sent ✓' : tResult?.startsWith('error') ? 'Failed' : 'Test'}
-                      </button>
-                    )}
+                  <div style={{ display: 'flex', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', alignItems: 'center' }}>
+                    <Phone size={13} />{s.phone}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 8, fontSize: 12, color: '#d97706', alignItems: 'center' }}>
-                    <MessageCircle size={13} />
                     <span>No phone — <button onClick={() => { setSelected(s); setModalType('edit') }}
                       style={{ color: '#f97316', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 12, padding: 0, fontFamily: 'DM Sans, sans-serif' }}>
                       Add number
@@ -318,13 +221,7 @@ const Suppliers = () => {
                 </div>
               </div>
 
-              {/* Test error message */}
-              {tResult?.startsWith('error') && (
-                <div style={{ marginTop: 8, fontSize: 11, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>
-                  {tResult}
-                </div>
-              )}
-            </div>
+              </div>
           )
         })}
       </div>

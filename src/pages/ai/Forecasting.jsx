@@ -3,70 +3,11 @@ import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
-import { TrendingUp, Sparkles, RefreshCw, ChevronDown, Brain } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { salesService } from '../../services/salesService'
-import { aiService } from '../../services/aiService'
-import Button from '../../components/shared/Button'
 import Loader from '../../components/shared/Loader'
 import { formatCurrency, formatCurrencyShort } from '../../utils/formatters'
-
-const AIInsightBox = ({ insight, loading }) => (
-  <div style={{
-    background: 'linear-gradient(135deg, #0d1117 0%, #1a1f2e 100%)',
-    border: '1px solid #1e2530',
-    borderRadius: 14,
-    padding: '20px 24px',
-    position: 'relative',
-    overflow: 'hidden',
-  }}>
-    {/* Glow effect */}
-    <div style={{
-      position: 'absolute', top: -30, right: -30,
-      width: 120, height: 120, borderRadius: 99,
-      background: 'radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%)',
-      pointerEvents: 'none',
-    }} />
-
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-      <div style={{
-        width: 28, height: 28, borderRadius: 8,
-        background: 'rgba(249,115,22,0.15)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Sparkles size={14} color="#f97316" />
-      </div>
-      <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#fff' }}>
-        AI Forecast Insight
-      </span>
-      <span style={{
-        fontSize: 10, background: 'rgba(249,115,22,0.15)', color: '#f97316',
-        padding: '2px 8px', borderRadius: 99, fontWeight: 600, marginLeft: 'auto',
-      }}>
-        Powered by Claude
-      </span>
-    </div>
-
-    {loading ? (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {[80, 100, 60, 90].map((w, i) => (
-          <div key={i} style={{ height: 12, width: `${w}%`, background: 'rgba(255,255,255,0.06)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
-        ))}
-      </div>
-    ) : insight ? (
-      <p style={{
-        fontSize: 13.5, color: '#9ca3af', lineHeight: 1.8,
-        margin: 0, whiteSpace: 'pre-line', fontFamily: 'DM Sans, sans-serif',
-      }}>
-        {insight}
-      </p>
-    ) : (
-      <p style={{ fontSize: 13, color: '#4b5563', margin: 0, fontStyle: 'italic' }}>
-        Select a product above to get AI-powered demand forecasting insights.
-      </p>
-    )}
-  </div>
-)
 
 // Simulate forecast points based on sales history
 const buildForecastData = (history) => {
@@ -101,10 +42,8 @@ const Forecasting = () => {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [salesHistory, setSalesHistory] = useState([])
   const [forecastData, setForecastData] = useState([])
-  const [insight, setInsight] = useState('')
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [loadingHistory, setLoadingHistory] = useState(false)
-  const [loadingAI, setLoadingAI] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -116,7 +55,6 @@ const Forecasting = () => {
 
   const handleSelectProduct = async (product) => {
     setSelectedProduct(product)
-    setInsight('')
     setLoadingHistory(true)
 
     try {
@@ -143,27 +81,6 @@ const Forecasting = () => {
       console.error(err)
     } finally {
       setLoadingHistory(false)
-    }
-  }
-
-  const handleGetAIInsight = async () => {
-    if (!selectedProduct) return
-    setLoadingAI(true)
-    setInsight('')
-    try {
-      const text = await aiService.getForecastInsight({
-        productName: selectedProduct.product_name,
-        salesHistory: salesHistory.slice(-14).map(d => ({ date: d.date, qty: d.amount })),
-        currentStock: selectedProduct.quantity,
-        reorderLevel: selectedProduct.reorder_level,
-        avgDeliveryDays: selectedProduct.suppliers?.average_delivery_days || 3,
-      })
-      setInsight(text)
-    } catch (err) {
-        console.error('AI Error:', err)
-        setInsight('Error: ' + err.message)
-    } finally {
-      setLoadingAI(false)
     }
   }
 
@@ -196,10 +113,7 @@ const Forecasting = () => {
             </div>
             <h1 className="page-title" style={{ margin: 0 }}>AI Demand Forecasting</h1>
           </div>
-          <p className="page-subtitle">Select a product to analyse demand patterns and get AI-powered predictions</p>
-        </div>
-        <div style={{ fontSize: 11, background: '#fff7ed', color: '#f97316', border: '1px solid #fed7aa', borderRadius: 8, padding: '6px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Brain size={13} /> ForgeraAI Engine
+          <p className="page-subtitle">Select a product to analyse demand patterns and forecast future demand</p>
         </div>
       </div>
 
@@ -289,14 +203,6 @@ const Forecasting = () => {
                       <span>Sell price: <strong style={{ color: 'var(--success)', fontFamily: 'Outfit, sans-serif' }}>{formatCurrency(selectedProduct.selling_price)}</strong></span>
                     </div>
                   </div>
-                  <Button
-                    icon={<Sparkles />}
-                    loading={loadingAI}
-                    onClick={handleGetAIInsight}
-                    size="sm"
-                  >
-                    Get AI Insight
-                  </Button>
                 </div>
               </div>
 
@@ -377,9 +283,6 @@ const Forecasting = () => {
                   </ResponsiveContainer>
                 )}
               </div>
-
-              {/* AI Insight */}
-              <AIInsightBox insight={insight} loading={loadingAI} />
 
               {/* Forecast stats */}
               {!loadingHistory && salesHistory.length > 0 && (

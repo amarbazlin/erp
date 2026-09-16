@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Truck, MessageCircle } from 'lucide-react'
+import { Plus, Truck } from 'lucide-react'
 import { purchaseService } from '../../services/purchaseService'
 import { supplierService } from '../../services/supplierService'
-import { sendPurchaseOrderToSupplier } from '../../services/whatsappService'
 import { useAuth } from '../../context/AuthContext'
 import { useProducts } from '../../hooks/useProducts'
 import Modal from '../../components/shared/Modal'
@@ -54,45 +53,11 @@ const PurchaseModal = ({ open, onClose, onCreated }) => {
     if (items.some(i => !i.product_id || i.quantity < 1)) return alert('Fill all items')
     setSaving(true)
     try {
-      const supplier = suppliers.find(s => s.id === parseInt(supplierId))
       const purchase = await purchaseService.create({
         supplierId: parseInt(supplierId),
         items,
         purchasedBy: user?.id,
       })
-
-      // Build enriched items with product names for WhatsApp
-      const whatsappItems = items.map(item => {
-        const p = products.find(pr => pr.id === parseInt(item.product_id))
-        return {
-          product_name: p?.product_name || 'Product',
-          unit: p?.unit,
-          quantity: item.quantity,
-          unit_cost: item.unit_cost,
-          subtotal: item.subtotal,
-        }
-      })
-
-      // Send WhatsApp to supplier with link to this purchase order
-      if (supplier?.phone) {
-        try {
-          await sendPurchaseOrderToSupplier({
-            supplier,
-            items: whatsappItems,
-            invoiceNumber: purchase.invoice_number,
-          })
-        } catch (waErr) {
-          console.error('WhatsApp send failed:', waErr)
-          alert(`Purchase order ${purchase.invoice_number} created, but WhatsApp failed: ${waErr.message}`)
-          setItems([{ product_id: '', quantity: 1, unit_cost: 0, subtotal: 0 }])
-          setSupplierId('')
-          onCreated(purchase.invoice_number)
-          onClose()
-          return
-        }
-      } else {
-        alert(`Purchase order ${purchase.invoice_number} created. Add a supplier phone number to enable WhatsApp notifications.`)
-      }
 
       setItems([{ product_id: '', quantity: 1, unit_cost: 0, subtotal: 0 }])
       setSupplierId('')
@@ -104,14 +69,14 @@ const PurchaseModal = ({ open, onClose, onCreated }) => {
 
   return (
     <Modal open={open} onClose={onClose} title="New Purchase Order" width={640}
-      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} onClick={handleSubmit} icon={<MessageCircle size={14} />}>Confirm & Send PO — {formatCurrency(total)}</Button></>}>
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={saving} onClick={handleSubmit}>Create Purchase Order — {formatCurrency(total)}</Button></>}>
       <div className="form-group">
         <label>Supplier *</label>
         <select className="input-base" value={supplierId} onChange={e => setSupplierId(e.target.value)}>
           <option value="">Select supplier</option>
           {suppliers.map(s => (
             <option key={s.id} value={s.id}>
-              {s.supplier_name}{s.phone ? '' : ' (no WhatsApp)'}
+              {s.supplier_name}
             </option>
           ))}
         </select>
@@ -209,7 +174,7 @@ const Purchases = () => {
 
   useEffect(() => { fetchPurchases() }, [dateFilter.apiParams.from, dateFilter.apiParams.to])
 
-  // Scroll to highlighted PO when opened from WhatsApp link
+  // Scroll to highlighted PO when opened from a notification link
   useEffect(() => {
     if (!highlightPo || loading) return
     const el = document.getElementById(`po-${highlightPo}`)

@@ -3,57 +3,19 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts'
-import { Sun, Sparkles, Brain, RefreshCw, TrendingUp, Calendar } from 'lucide-react'
+import { Sun } from 'lucide-react'
 import { salesService } from '../../services/salesService'
-import { getSeasonalAnalysis, getProductSeasonalPattern } from '../../services/aiService'
-import { SL_SEASONAL_EVENTS, SL_MONTHS } from '../../utils/constants'
-import Button from '../../components/shared/Button'
-import Loader from '../../components/shared/Loader'
+import { SL_SEASONAL_EVENTS } from '../../utils/constants'
 import { formatCurrencyShort } from '../../utils/formatters'
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const BAR_COLORS  = ['#3b82f6','#f97316','#22c55e','#a855f7','#f59e0b','#ef4444',
                      '#06b6d4','#84cc16','#ec4899','#8b5cf6','#14b8a6','#f97316']
 
-const AIInsightPanel = ({ insight, loading, title }) => (
-  <div style={{
-    background: 'linear-gradient(135deg,#0d1117,#1a1f2e)',
-    border: '1px solid #1e2530', borderRadius: 14, padding: '18px 22px',
-    position: 'relative', overflow: 'hidden',
-  }}>
-    <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 99, background: 'radial-gradient(circle,rgba(249,115,22,0.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <div style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(249,115,22,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Sparkles size={13} color="#f97316" />
-      </div>
-      <span style={{ fontFamily: 'Outfit,sans-serif', fontSize: 13, fontWeight: 700, color: '#fff' }}>{title}</span>
-      <span style={{ fontSize: 10, background: 'rgba(249,115,22,0.15)', color: '#f97316', padding: '1px 7px', borderRadius: 99, fontWeight: 600, marginLeft: 'auto' }}>Claude</span>
-    </div>
-    {loading ? (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {[80,100,65,90,55].map((w,i) => (
-          <div key={i} style={{ height: 11, width: `${w}%`, background: 'rgba(255,255,255,0.06)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
-        ))}
-      </div>
-    ) : insight ? (
-      <p style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.85, margin: 0, whiteSpace: 'pre-line', fontFamily: 'DM Sans,sans-serif' }}>
-        {insight}
-      </p>
-    ) : (
-      <p style={{ fontSize: 13, color: '#4b5563', margin: 0, fontStyle: 'italic' }}>
-        Click "Analyse with AI" to generate seasonal insights.
-      </p>
-    )}
-  </div>
-)
-
 const SeasonalDemand = () => {
   const [salesByMonth,  setSalesByMonth]  = useState([])
   const [topProducts,   setTopProducts]   = useState([])
   const [loading,       setLoading]       = useState(true)
-  const [aiInsight,     setAiInsight]     = useState('')
-  const [loadingAI,     setLoadingAI]     = useState(false)
-  const currentMonth = MONTH_NAMES[new Date().getMonth()]
 
   useEffect(() => {
     const load = async () => {
@@ -78,26 +40,6 @@ const SeasonalDemand = () => {
     load()
   }, [])
 
-  const handleAnalyse = async () => {
-    setLoadingAI(true)
-    setAiInsight('')
-    try {
-      const upcomingEvents = SL_SEASONAL_EVENTS.filter(e => {
-        const curIdx = new Date().getMonth() + 1
-        return e.month >= curIdx && e.month <= curIdx + 3
-      })
-      const text = await getSeasonalAnalysis({
-        salesByMonth: salesByMonth.map(m => ({ month: m.month, revenue: Math.round(m.revenue) })),
-        topProducts,
-        currentMonth,
-        upcomingEvents,
-      })
-      setAiInsight(text)
-    } catch (err) {
-      setAiInsight('Unable to generate analysis. Please check your API configuration.')
-    } finally { setLoadingAI(false) }
-  }
-
   const maxRevenue = Math.max(...salesByMonth.map(m => m.revenue), 1)
   const thisMonthIdx = new Date().getMonth()
 
@@ -113,12 +55,6 @@ const SeasonalDemand = () => {
             <h1 className="page-title" style={{ margin: 0 }}>Seasonal Demand Analysis</h1>
           </div>
           <p className="page-subtitle">12-month revenue patterns with Sri Lankan seasonal event mapping</p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ fontSize: 11, background: '#fff7ed', color: '#f97316', border: '1px solid #fed7aa', borderRadius: 8, padding: '6px 12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Brain size={13} /> ForgeraAI
-          </div>
-          <Button icon={<Sparkles />} loading={loadingAI} onClick={handleAnalyse}>Analyse with AI</Button>
         </div>
       </div>
 
@@ -228,9 +164,6 @@ const SeasonalDemand = () => {
           })}
         </div>
       </div>
-
-      {/* AI Insight */}
-      <AIInsightPanel insight={aiInsight} loading={loadingAI} title="AI Seasonal Forecast & Pre-stocking Advice" />
     </div>
   )
 }

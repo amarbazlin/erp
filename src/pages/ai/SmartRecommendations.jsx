@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-  MessageCircle, CheckCircle, XCircle, AlertTriangle,
-  Package, Sparkles, RefreshCw, History, Bell,
+  CheckCircle, XCircle, AlertTriangle,
+  Package, RefreshCw, History, Bell,
   ShieldAlert, Info, Send, ChevronDown, ChevronUp,
   Clock, Truck, Check, X
 } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { alertsService } from '../../services/alertsService'
 import { reorderService } from '../../services/reorderService'
-import { getReorderRecommendations } from '../../services/aiService'
-import { sendReorderToSupplier, getAppUrl } from '../../services/whatsappService'
 import { useAuth } from '../../context/AuthContext'
 import { useRBAC } from '../../context/RBACContext'
 import { P, ROLES } from '../../utils/permissions'
@@ -220,43 +218,6 @@ const ReceiveModal = ({ open, order, product, onConfirm, onClose }) => {
   )
 }
 
-// ── AI recommendations panel ───────────────────────────────────────────────────
-const AIPanel = ({ insight, loading }) => (
-  <div style={{
-    background: 'linear-gradient(135deg, #0d1117, #1a1f2e)',
-    border: '1px solid #1e2530', borderRadius: 14, padding: '18px 22px',
-    position: 'relative', overflow: 'hidden',
-  }}>
-    <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: 99, background: 'radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <div style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(249,115,22,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Sparkles size={13} color="#f97316" />
-      </div>
-      <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#fff' }}>
-        AI Prioritised Recommendations
-      </span>
-      <span style={{ fontSize: 10, background: 'rgba(249,115,22,0.15)', color: '#f97316', padding: '1px 7px', borderRadius: 99, fontWeight: 600, marginLeft: 'auto' }}>
-        ForgeraOS
-      </span>
-    </div>
-    {loading ? (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {[80, 100, 65, 90].map((w, i) => (
-          <div key={i} style={{ height: 11, width: `${w}%`, background: 'rgba(255,255,255,0.06)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
-        ))}
-      </div>
-    ) : insight ? (
-      <p style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.85, margin: 0, whiteSpace: 'pre-line', fontFamily: 'DM Sans, sans-serif' }}>
-        {insight}
-      </p>
-    ) : (
-      <p style={{ fontSize: 13, color: '#4b5563', margin: 0, fontStyle: 'italic' }}>
-        Click "Generate AI Analysis" below to get prioritised reorder recommendations.
-      </p>
-    )}
-  </div>
-)
-
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -275,8 +236,6 @@ const SmartRecommendations = () => {
   // ── UI state ──────────────────────────────────────────────────────────────
   const [sendingId,    setSendingId]    = useState(null)   // product id currently being sent
   const [receiveModal, setReceiveModal] = useState(null)   // { order, product }
-  const [aiInsight,    setAiInsight]    = useState('')
-  const [loadingAI,    setLoadingAI]    = useState(false)
   const [historyOpen,  setHistoryOpen]  = useState(false)
   const [history,      setHistory]      = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -309,13 +268,8 @@ const SmartRecommendations = () => {
   const getOrderForProduct = (productId) =>
     activeOrders.find(o => o.product_id === productId) || null
 
-  // ── Send order for single product ─────────────────────────────────────────
+  // ── Create order for single product ───────────────────────────────────────
   const handleSendOrder = async (product) => {
-    if (!product.suppliers?.phone) {
-      alert(`${product.suppliers?.supplier_name || 'Supplier'} has no phone number. Go to Suppliers and add their WhatsApp number first.`)
-      return
-    }
-
     setSendingId(product.id)
     try {
       const deficit      = Math.max(0, product.reorder_level - product.quantity)
@@ -330,28 +284,13 @@ const SmartRecommendations = () => {
         notes:      `Auto-generated from Smart Reorder`,
       })
 
-      // 2. Send WhatsApp message
-      await sendReorderToSupplier({
-        supplier: product.suppliers,
-        items: [{
-          product_name:  product.product_name,
-          product_code:  product.product_code,
-          unit:          product.unit,
-          current_stock: product.quantity,
-          reorder_level: product.reorder_level,
-          suggested_qty: suggestedQty,
-          buying_price:  product.buying_price,
-        }],
-        purchaseUrl: `${getAppUrl()}/purchases`,
-      })
-
-      // 3. Mark as sent
+      // 2. Mark as placed
       await reorderService.markSent(order.id)
 
-      // 4. Reload
+      // 3. Reload
       await loadData()
     } catch (err) {
-      alert(`Failed to send order: ${err.message}`)
+      alert(`Failed to create order: ${err.message}`)
     } finally {
       setSendingId(null)
     }
@@ -374,9 +313,9 @@ const SmartRecommendations = () => {
 
   // ── Send all pending ──────────────────────────────────────────────────────
   const handleSendAll = async () => {
-    const pending = lowStockProducts.filter(p => !getOrderForProduct(p.id) && p.suppliers?.phone)
+    const pending = lowStockProducts.filter(p => !getOrderForProduct(p.id))
     if (pending.length === 0) {
-      alert('No pending products with a valid supplier phone number.')
+      alert('No pending products to order.')
       return
     }
     setSendingAll(true)
@@ -410,21 +349,6 @@ const SmartRecommendations = () => {
   const handleResolveAllAlerts = async () => {
     await alertsService.resolveAll()
     setAlerts([])
-  }
-
-  // ── AI analysis ───────────────────────────────────────────────────────────
-  const handleGenerateAI = async () => {
-    if (lowStockProducts.length === 0) return
-    setLoadingAI(true)
-    setAiInsight('')
-    try {
-      const text = await getReorderRecommendations(lowStockProducts)
-      setAiInsight(text)
-    } catch (err) {
-      setAiInsight('Unable to generate recommendations. Check your API configuration.')
-    } finally {
-      setLoadingAI(false)
-    }
   }
 
   // ── History ────────────────────────────────────────────────────────────────
@@ -474,13 +398,12 @@ const SmartRecommendations = () => {
               loading={sendingAll}
               size="sm"
               onClick={handleSendAll}
-              style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', boxShadow: '0 4px 14px rgba(37,211,102,0.3)' }}
             >
               {sendingAll
                 ? sendAllProgress
-                  ? `Sending ${sendAllProgress.current}/${sendAllProgress.total}…`
-                  : 'Sending…'
-                : `Send All Pending (${pendingCount})`
+                  ? `Creating ${sendAllProgress.current}/${sendAllProgress.total}…`
+                  : 'Creating…'
+                : `Create All Orders (${pendingCount})`
               }
             </Button>
           )}
@@ -492,7 +415,7 @@ const SmartRecommendations = () => {
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 18px', marginBottom: 20, animation: 'fadeIn 0.3s ease' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 700, color: '#15803d' }}>
-              Batch complete — {sendAllResults.sent.length} sent, {sendAllResults.failed.length} failed
+              Batch complete — {sendAllResults.sent.length} created, {sendAllResults.failed.length} failed
             </div>
             <button onClick={() => setSendAllResults(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
               <X size={15} />
@@ -625,8 +548,8 @@ const SmartRecommendations = () => {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, marginTop: 2 }}>
                               {hasPhone ? (
-                                <span style={{ color: '#25D366', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <MessageCircle size={11} /> WhatsApp ready
+                                <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <Phone size={11} /> {product.suppliers.phone}
                                 </span>
                               ) : (
                                 <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -660,11 +583,6 @@ const SmartRecommendations = () => {
                         {order ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <OrderStatusBadge status={order.status} />
-                            {order.status === 'sent' && order.whatsapp_sent_at && (
-                              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
-                                {formatRelative(order.whatsapp_sent_at)}
-                              </span>
-                            )}
                           </div>
                         ) : (
                           <OrderStatusBadge status="pending" />
@@ -677,15 +595,15 @@ const SmartRecommendations = () => {
                           {!order && canSendOrders && (
                             <button
                               onClick={() => handleSendOrder(product)}
-                              disabled={!hasPhone || isSending}
-                              title={!hasPhone ? 'Add supplier phone number first' : 'Send WhatsApp order to supplier'}
+                              disabled={isSending}
+                              title={!hasPhone ? 'Supplier has no phone number on file' : 'Create a reorder for this product'}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 6,
                                 padding: '6px 12px', borderRadius: 8,
-                                border: `1px solid ${hasPhone ? '#bbf7d0' : 'var(--card-border)'}`,
-                                background: hasPhone ? '#f0fdf4' : 'var(--content-bg)',
-                                color: hasPhone ? '#16a34a' : 'var(--text-muted)',
-                                fontSize: 12, fontWeight: 600, cursor: hasPhone && !isSending ? 'pointer' : 'not-allowed',
+                                border: '1px solid #fed7aa',
+                                background: '#fff7ed',
+                                color: '#f97316',
+                                fontSize: 12, fontWeight: 600, cursor: isSending ? 'not-allowed' : 'pointer',
                                 opacity: isSending ? 0.6 : 1,
                                 fontFamily: 'DM Sans, sans-serif',
                                 transition: 'all 0.15s',
@@ -693,10 +611,10 @@ const SmartRecommendations = () => {
                               }}
                             >
                               {isSending
-                                ? <Loader size={12} color="#16a34a" />
-                                : <MessageCircle size={13} />
+                                ? <Loader size={12} color="#f97316" />
+                                : <Send size={13} />
                               }
-                              {isSending ? 'Sending…' : 'Send Order'}
+                              {isSending ? 'Creating…' : 'Place Order'}
                             </button>
                           )}
 
@@ -739,25 +657,6 @@ const SmartRecommendations = () => {
             </table>
           </div>
         )}
-      </div>
-
-      {/* ── AI Recommendations section ── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 15, fontWeight: 700, margin: 0 }}>
-            AI Analysis
-          </h3>
-          <Button
-            size="sm"
-            icon={<Sparkles />}
-            loading={loadingAI}
-            onClick={handleGenerateAI}
-            disabled={lowStockProducts.length === 0}
-          >
-            {aiInsight ? 'Regenerate' : 'Generate AI Analysis'}
-          </Button>
-        </div>
-        <AIPanel insight={aiInsight} loading={loadingAI} />
       </div>
 
       {/* ── Receive confirmation modal ── */}
