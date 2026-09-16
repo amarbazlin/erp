@@ -27,25 +27,11 @@ export const P = {
   MANAGE_SALES:        'manage:sales',
   CREATE_QUOTATIONS:   'create:quotations',
 
-  // Purchases
-  VIEW_PURCHASES:      'view:purchases',
-  CREATE_PURCHASES:    'create:purchases',
-  APPROVE_PURCHASES:   'approve:purchases',
-
-  // Suppliers
-  VIEW_SUPPLIERS:      'view:suppliers',
-  MANAGE_SUPPLIERS:    'manage:suppliers',
-
   // Customers
   VIEW_CUSTOMERS:      'view:customers',
   MANAGE_CUSTOMERS:    'manage:customers',
   MANAGE_CREDITS:      'manage:credits',
   VIEW_CREDITS:        'view:credits',
-
-  // Deliveries
-  VIEW_DELIVERIES:     'view:deliveries',
-  MANAGE_DELIVERIES:   'manage:deliveries',
-  VIEW_OWN_DELIVERIES: 'view:own_deliveries',
 
   // Returns
   VIEW_RETURNS:        'view:returns',
@@ -56,18 +42,11 @@ export const P = {
   VIEW_FINANCIAL:      'view:financial',
   MANAGE_PAYMENTS:     'manage:payments',
 
-  // Locations / branches
-  VIEW_ALL_BRANCHES:   'view:all_branches',
-  MANAGE_LOCATIONS:    'manage:locations',
-
   // Users & settings
   MANAGE_USERS:        'manage:users',
   MANAGE_ROLES:        'manage:roles',
   MANAGE_SETTINGS:     'manage:settings',
   MANAGE_PRICING:      'manage:pricing',
-
-  // AI features
-  VIEW_AI:             'view:ai',
 
   // Alerts
   VIEW_ALERTS:         'view:alerts',
@@ -129,15 +108,11 @@ export const ROLE_PERMISSIONS = {
     P.EXPORT_REPORTS,
     P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
     P.VIEW_SALES, P.CREATE_SALES, P.MANAGE_SALES, P.CREATE_QUOTATIONS,
-    P.VIEW_PURCHASES, P.CREATE_PURCHASES, P.APPROVE_PURCHASES,
-    P.VIEW_SUPPLIERS, P.MANAGE_SUPPLIERS,
     P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS, P.MANAGE_CREDITS, P.VIEW_CREDITS,
-    P.VIEW_DELIVERIES, P.MANAGE_DELIVERIES,
     P.VIEW_RETURNS, P.MANAGE_RETURNS, P.APPROVE_RETURNS,
     P.VIEW_FINANCIAL, P.MANAGE_PAYMENTS,
-    P.VIEW_ALL_BRANCHES, P.MANAGE_LOCATIONS,
     P.MANAGE_USERS,
-    P.VIEW_AI, P.VIEW_ALERTS,
+    P.VIEW_ALERTS,
   ],
 
   // 3. Branch Manager
@@ -145,22 +120,15 @@ export const ROLE_PERMISSIONS = {
     P.VIEW_DASHBOARD, P.VIEW_ANALYTICS,
     P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
     P.VIEW_SALES, P.CREATE_SALES, P.MANAGE_SALES, P.CREATE_QUOTATIONS,
-    P.VIEW_PURCHASES, P.CREATE_PURCHASES, P.APPROVE_PURCHASES,
-    P.VIEW_SUPPLIERS, P.MANAGE_SUPPLIERS,
     P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS, P.MANAGE_CREDITS, P.VIEW_CREDITS,
-    P.VIEW_DELIVERIES, P.MANAGE_DELIVERIES,
     P.VIEW_RETURNS, P.MANAGE_RETURNS, P.APPROVE_RETURNS,
     P.VIEW_ALERTS,
-    P.VIEW_AI,
   ],
 
   // 4. Inventory Manager / Storekeeper (warehouse staff)
   [ROLES.INVENTORY_MANAGER]: [
     P.VIEW_DASHBOARD,
     P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
-    P.VIEW_SUPPLIERS,
-    P.VIEW_PURCHASES, P.CREATE_PURCHASES,
-    P.VIEW_DELIVERIES, P.MANAGE_DELIVERIES,
     P.VIEW_ALERTS,
   ],
 
@@ -170,14 +138,13 @@ export const ROLE_PERMISSIONS = {
     P.VIEW_INVENTORY,      // read-only stock lookup
     P.VIEW_SALES, P.CREATE_SALES, P.CREATE_QUOTATIONS,
     P.VIEW_CUSTOMERS,
-    P.VIEW_DELIVERIES, P.MANAGE_DELIVERIES,
     P.VIEW_ALERTS,
   ],
 
   // 6. Accountant / Finance Officer
   [ROLES.ACCOUNTANT]: [
     P.VIEW_DASHBOARD,
-    P.VIEW_SALES, P.VIEW_PURCHASES,
+    P.VIEW_SALES,
     P.VIEW_CUSTOMERS, P.VIEW_CREDITS, P.MANAGE_CREDITS, P.MANAGE_PAYMENTS,
     P.VIEW_FINANCIAL,
     P.VIEW_RETURNS,
@@ -188,22 +155,19 @@ export const ROLE_PERMISSIONS = {
   // 7. Delivery Coordinator
   [ROLES.DELIVERY_COORDINATOR]: [
     P.VIEW_DASHBOARD,
-    P.VIEW_DELIVERIES, P.MANAGE_DELIVERIES,
     P.VIEW_CUSTOMERS,
     P.VIEW_ALERTS,
   ],
 
   // 8. Driver — minimal access
   [ROLES.DRIVER]: [
-    P.VIEW_OWN_DELIVERIES,
+    P.VIEW_DASHBOARD,
   ],
 
   // 9. Procurement Officer
   [ROLES.PROCUREMENT_OFFICER]: [
     P.VIEW_DASHBOARD,
     P.VIEW_INVENTORY,
-    P.VIEW_SUPPLIERS, P.MANAGE_SUPPLIERS,
-    P.VIEW_PURCHASES, P.CREATE_PURCHASES,
     P.VIEW_ALERTS,
   ],
 }
@@ -215,19 +179,9 @@ export const NAV_PERMISSIONS = {
   '/inventory':               P.VIEW_INVENTORY,
   '/customers':               P.VIEW_CUSTOMERS,
   '/sales':                   P.VIEW_SALES,
-  '/purchases':               P.VIEW_PURCHASES,
   '/returns':                 P.VIEW_RETURNS,
-  '/order-tracking':          P.VIEW_DELIVERIES,
-  '/deliveries':              P.VIEW_DELIVERIES,
-  '/suppliers':               P.VIEW_SUPPLIERS,
-  '/locations':               P.VIEW_ALL_BRANCHES,
   '/analytics':               P.VIEW_ANALYTICS,
   '/alerts':                  P.VIEW_ALERTS,
-  '/ai/forecasting':          P.VIEW_AI,
-  '/ai/recommendations':      P.VIEW_AI,
-  '/ai/anomaly':              P.VIEW_AI,
-  '/ai/seasonal':             P.VIEW_AI,
-  '/ai/supplier-discovery':   P.VIEW_AI,
   '/settings':                P.VIEW_DASHBOARD,
 }
 

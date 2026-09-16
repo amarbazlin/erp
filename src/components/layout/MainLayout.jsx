@@ -3,8 +3,6 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import { useAlerts } from '../../hooks/useAlerts'
-import useReorderScheduler from '../../hooks/useReorderScheduler'
-import ReorderNotificationModal from '../reorder/ReorderNotificationModal'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 const MainLayout = () => {
@@ -25,14 +23,6 @@ const MainLayout = () => {
   useEffect(() => {
     if (!isCompact) setSidebarOpen(true)
   }, [isCompact])
-
-  const {
-    modalOpen,
-    supplierGroups,
-    loading: reorderLoading,
-    dismissModal,
-    triggerNow,
-  } = useReorderScheduler()
 
   const toggleSidebar = () => setSidebarOpen(o => !o)
   const closeSidebar  = () => setSidebarOpen(false)
@@ -67,20 +57,11 @@ const MainLayout = () => {
           alertCount={unresolvedCount}
           onToggleSidebar={toggleSidebar}
           isMobile={isCompact}
-          onTestReorder={triggerNow}
         />
         <div style={styles.content}>
           <Outlet />
         </div>
       </div>
-
-      {/* ── Reorder modal ── */}
-      <ReorderNotificationModal
-        open={modalOpen}
-        supplierGroups={supplierGroups}
-        loading={reorderLoading}
-        onDismiss={dismissModal}
-      />
     </div>
   )
 }

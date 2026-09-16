@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, RefreshCw, Edit2, Trash2, ScanLine, Download } from 'lucide-react'
 import { useProducts, useCategories } from '../../hooks/useProducts'
 import { productService } from '../../services/productService'
-import { LocationSelect } from '../../components/delivery/DeliveryStatusBadge'
 import BarcodeScanner from '../../components/barcode/BarcodeScanner'
 import StockStatusBadge from '../../components/inventory/StockStatusBadge'
 import SearchBar from '../../components/shared/SearchBar'
@@ -20,7 +19,6 @@ const Inventory = () => {
   const navigate = useNavigate()
   const [search,         setSearch]         = useState('')
   const [selectedCat,    setSelectedCat]    = useState('')
-  const [selectedLoc,    setSelectedLoc]    = useState(null)
   const [deleteTarget,   setDeleteTarget]   = useState(null)
   const [deleting,       setDeleting]       = useState(false)
   const [scannerOpen,    setScannerOpen]    = useState(false)
@@ -101,7 +99,6 @@ const Inventory = () => {
           <option value="">All Categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <LocationSelect value={selectedLoc} onChange={setSelectedLoc} placeholder="All locations" />
         <DateRangeFilter
           open={dateFilter.open}
           onToggle={dateFilter.openPanel}

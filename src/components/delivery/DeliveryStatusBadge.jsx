@@ -1,10 +1,9 @@
 // ── DeliveryStatusBadge ───────────────────────────────────────────────────────
 import React from 'react'
-import { useLocations } from '../../hooks/useDeliveries'
 import { pricingService } from '../../services/pricingService'
-import { generateInvoicePDF, generateQuotationPDF, generateDeliveryNotePDF, generateCreditNotePDF } from '../../services/invoiceService'
+import { generateInvoicePDF, generateQuotationPDF, generateCreditNotePDF } from '../../services/invoiceService'
 import { Download, Eye } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const STATUS_CFG = {
   pending:    { label: 'Pending',    bg: '#fffbeb', color: '#d97706', dot: '#f59e0b' },
@@ -23,28 +22,6 @@ export const DeliveryStatusBadge = ({ status }) => {
       <span style={{ width: 6, height: 6, borderRadius: 99, background: cfg.dot, flexShrink: 0 }} />
       {cfg.label}
     </span>
-  )
-}
-
-// ── LocationSelect ────────────────────────────────────────────────────────────
-export const LocationSelect = ({ value, onChange, placeholder = 'All locations', showAll = true }) => {
-  const { locations, loading } = useLocations()
-
-  return (
-    <select
-      className="input-base"
-      value={value || ''}
-      onChange={e => onChange(e.target.value || null)}
-      style={{ minWidth: 160 }}
-      disabled={loading}
-    >
-      {showAll && <option value="">{placeholder}</option>}
-      {locations.map(l => (
-        <option key={l.id} value={l.id}>
-          {l.name}{l.is_default ? ' ★' : ''}
-        </option>
-      ))}
-    </select>
   )
 }
 
@@ -95,15 +72,6 @@ export const InvoicePreview = ({ sale }) => {
     </button>
   )
 }
-
-export const DeliveryNoteButton = ({ delivery }) => (
-  <button
-    onClick={() => generateDeliveryNotePDF(delivery)}
-    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 7, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#2563eb', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-  >
-    <Download size={13} /> Delivery Note
-  </button>
-)
 
 export const CreditNoteButton = ({ ret }) => (
   <button

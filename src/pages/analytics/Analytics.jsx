@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
-import { TrendingUp, BarChart3, Package, RefreshCw } from 'lucide-react'
+import { TrendingUp, BarChart3, RefreshCw } from 'lucide-react'
 import { analyticsService } from '../../services/analyticsService'
 import { formatCurrencyShort } from '../../utils/formatters'
 import Loader from '../../components/shared/Loader'
@@ -37,23 +37,20 @@ const Analytics = () => {
   const [revenue, setRevenue] = useState([])
   const [categories, setCategories] = useState([])
   const [trend, setTrend] = useState([])
-  const [supplierPerf, setSupplierPerf] = useState([])
   const [stockHealth, setStockHealth] = useState([])
 
   const load = async () => {
     setLoading(true)
     try {
-      const [rev, cats, tr, suppliers, health] = await Promise.all([
+      const [rev, cats, tr, health] = await Promise.all([
         analyticsService.getRevenueChart(90),
         analyticsService.getCategoryBreakdown(),
         analyticsService.getPurchaseSaleTrend(6),
-        analyticsService.getSupplierPerformance(),
         analyticsService.getStockHealth(),
       ])
       setRevenue(rev)
       setCategories(cats)
       setTrend(tr)
-      setSupplierPerf(suppliers)
       setStockHealth(health)
     } catch (err) {
       console.error(err)
@@ -142,26 +139,6 @@ const Analytics = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Supplier performance */}
-      <div className="card" style={{ padding: '20px 24px', marginBottom: 20 }}>
-        <SectionHeader title="Supplier Performance" subtitle="Delivery days vs order volume" />
-        {loading ? <div className="skeleton" style={{ height: 180, borderRadius: 10 }} /> : supplierPerf.length === 0 ? (
-          <div className="empty-state" style={{ padding: 40 }}><Package size={28} /><p>No supplier data yet</p></div>
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={supplierPerf} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={90} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="deliveryDays" name="Avg Delivery Days" fill="#f97316" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="orderCount" name="Total Orders" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
       </div>
 
       {/* Stock health breakdown */}

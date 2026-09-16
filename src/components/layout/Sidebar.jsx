@@ -1,45 +1,30 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Package, Users2, ShoppingCart, Truck,
-  RotateCcw, ClipboardList, Building2, Store, BarChart3, Bell,
-  Sparkles, Settings, ChevronDown, TrendingUp, RefreshCw,
-  AlertTriangle, Zap, Sun, Search, X
+  LayoutDashboard, Package, Users2, ShoppingCart,
+  RotateCcw, BarChart3, Settings, Sparkles, X
 } from 'lucide-react'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
 import AppLogo from '../shared/AppLogo'
 
 const ICON_MAP = {
-  LayoutDashboard, Package, Users2, ShoppingCart, Truck,
-  RotateCcw, ClipboardList, Building2, Store, BarChart3, Bell,
-  Sparkles, Settings,
+  LayoutDashboard, Package, Users2, ShoppingCart,
+  RotateCcw, BarChart3, Settings,
 }
-
-const AI_CHILDREN = [
-  { path: '/ai/forecasting',        label: 'Forecasting',        icon: TrendingUp    },
-  { path: '/ai/recommendations',    label: 'Smart Reorder',      icon: RefreshCw     },
-  { path: '/ai/seasonal',           label: 'Seasonal Demand',    icon: Sun           },
-  { path: '/ai/supplier-discovery', label: 'Supplier Discovery', icon: Search        },
-]
 
 const NAV = [
   { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null },
   { path: '/inventory',  label: 'Inventory',  icon: 'Package',                        permission: P.VIEW_INVENTORY      },
   { path: '/customers',  label: 'Customers',  icon: 'Users2',                         permission: P.VIEW_CUSTOMERS      },
   { path: '/sales',      label: 'Sales',      icon: 'ShoppingCart',                   permission: P.VIEW_SALES          },
-  { path: '/purchases',  label: 'Purchases',  icon: 'Truck',                          permission: P.VIEW_PURCHASES      },
   { path: '/returns',    label: 'Returns',    icon: 'RotateCcw',                      permission: P.VIEW_RETURNS        },
-  { path: '/order-tracking', label: 'Order Tracking', icon: 'ClipboardList',          permission: P.VIEW_DELIVERIES     },
-  { path: '/suppliers',  label: 'Suppliers',  icon: 'Building2',                      permission: P.VIEW_SUPPLIERS      },
-  { path: '/locations',  label: 'Locations',  icon: 'Store',                          permission: P.VIEW_ALL_BRANCHES   },
   { path: '/analytics',  label: 'Analytics',  icon: 'BarChart3',                      permission: P.VIEW_ANALYTICS      },
 ]
 
 const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
   const location  = useLocation()
   const { can }   = useRBAC()
-  const [aiOpen, setAiOpen] = useState(location.pathname.startsWith('/ai'))
 
   const isActive = (path, exact) =>
     exact ? location.pathname === path : location.pathname.startsWith(path)
@@ -48,7 +33,6 @@ const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
   const visibleNav = NAV.filter(item =>
     !item.permission || can(item.permission)
   )
-  const visibleAiChildren = AI_CHILDREN.filter(() => can(P.VIEW_AI))
 
   return (
     <>
@@ -110,55 +94,6 @@ const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
               </NavLink>
             )
           })}
-
-          {/* AI section — only if user has VIEW_AI */}
-          {visibleAiChildren.length > 0 && (
-            <>
-              <div style={S.sectionLabel2}>AI INTELLIGENCE</div>
-              <button
-                style={{
-                  ...S.navItem, width: '100%', background: 'none',
-                  border: 'none', cursor: 'pointer', justifyContent: 'space-between',
-                  ...(location.pathname.startsWith('/ai') ? S.navItemActive : {}),
-                }}
-                onClick={() => setAiOpen(o => !o)}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Sparkles size={15} color={location.pathname.startsWith('/ai') ? '#f97316' : '#6b7280'} />
-                  <span style={S.navLabel}>AI Features</span>
-                </div>
-                <ChevronDown
-                  size={13} color="#6b7280"
-                  style={{ transform: aiOpen ? 'rotate(180deg)' : 'none', transition: '0.2s', flexShrink: 0 }}
-                />
-              </button>
-
-              {aiOpen && (
-                <div style={S.subMenu}>
-                  {visibleAiChildren.map(child => {
-                    const SubIcon = child.icon
-                    const active  = location.pathname === child.path
-                    return (
-                      <NavLink
-                        key={child.path}
-                        to={child.path}
-                        onClick={() => isMobile && onClose()}
-                        style={{
-                          ...S.subItem,
-                          color:      active ? '#f97316' : '#6b7280',
-                          background: active ? 'rgba(249,115,22,0.08)' : 'transparent',
-                          borderLeft: active ? '2px solid #f97316' : '2px solid transparent',
-                        }}
-                      >
-                        <SubIcon size={13} />
-                        {child.label}
-                      </NavLink>
-                    )
-                  })}
-                </div>
-              )}
-            </>
-          )}
 
           {/* Settings — always visible */}
           <NavLink

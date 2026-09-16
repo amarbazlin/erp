@@ -90,7 +90,7 @@ const Settings = () => {
 
   const [notif, setNotif] = useState({
     lowStockAlerts: true, outOfStockAlerts: true,
-    dailySummary: false, aiInsights: true, supplierAlerts: true,
+    dailySummary: false,
   })
 
   const [biz, setBiz] = useState({
@@ -214,8 +214,6 @@ const Settings = () => {
         <SectionCard title="Notification Preferences" subtitle="Choose which alerts you receive" icon={Bell}>
           <Toggle value={notif.lowStockAlerts}   onChange={v => setNotif(s=>({...s,lowStockAlerts:v}))}   label="Low Stock Alerts"    description="When products fall below reorder level" />
           <Toggle value={notif.outOfStockAlerts} onChange={v => setNotif(s=>({...s,outOfStockAlerts:v}))} label="Out of Stock Alerts"  description="Immediate alert when stock hits zero" />
-          <Toggle value={notif.aiInsights}       onChange={v => setNotif(s=>({...s,aiInsights:v}))}       label="AI Insights"          description="AI-generated inventory recommendations" />
-          <Toggle value={notif.supplierAlerts}   onChange={v => setNotif(s=>({...s,supplierAlerts:v}))}   label="Supplier Alerts"      description="Delivery delays and supplier issues" />
           <Toggle value={notif.dailySummary}     onChange={v => setNotif(s=>({...s,dailySummary:v}))}     label="Daily Summary"        description="End-of-day business summary" />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Button icon={<Save />} onClick={showSaved}>Save Preferences</Button>
@@ -312,7 +310,7 @@ const Settings = () => {
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: 32, fontSize: 12, color: 'var(--text-muted)' }}>
-        HardwareAI v2.0 · Powered by <span style={{ color: '#f97316', fontWeight: 600 }}>ForgeraAI</span> · Built with Claude API
+        HardwareAI v2.0 · Powered by <span style={{ color: '#f97316', fontWeight: 600 }}>Forgera</span>
       </div>
     </div>
   )

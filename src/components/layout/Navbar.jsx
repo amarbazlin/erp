@@ -7,7 +7,7 @@ import { ROLE_LABELS, ROLE_COLORS } from '../../utils/permissions'
 import { formatDate } from '../../utils/formatters'
 import AppLogo from '../shared/AppLogo'
 
-const Navbar = ({ alertCount = 0, onToggleSidebar, isMobile, onTestReorder }) => {
+const Navbar = ({ alertCount = 0, onToggleSidebar, isMobile }) => {
   const { profile, signOut } = useAuth()
   const { role }             = useRBAC()
   const navigate             = useNavigate()
@@ -90,7 +90,7 @@ const Navbar = ({ alertCount = 0, onToggleSidebar, isMobile, onTestReorder }) =>
         {/* Alerts bell */}
         <button
           style={{ ...S.iconBtn, position: 'relative' }}
-          onClick={() => navigate('/ai/recommendations')}
+          onClick={() => navigate('/inventory')}
           aria-label="Alerts"
         >
           <Bell size={17} color="var(--text-secondary)" />

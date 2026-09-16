@@ -16,9 +16,9 @@ const useIsMobile = () => {
 
 const FEATURES = [
   'Real-time stock tracking',
-  'AI-powered demand forecasting',
-  'Smart reorder alerts',
-  'Supplier performance analytics',
+  'Fast invoicing & barcode scanning',
+  'Low stock alerts',
+  'Sales & inventory analytics',
 ]
 
 const Login = () => {
@@ -146,8 +146,8 @@ const Login = () => {
             Inventory intelligence<br />for hardware retail
           </h1>
           <p style={styles.subtext}>
-            AI-powered demand forecasting, smart reorder alerts, and real-time
-            analytics — built for Sri Lankan distribution businesses.
+            Real-time stock tracking, fast invoicing, and analytics —
+            built for Sri Lankan distribution businesses.
           </p>
           <div style={styles.features}>
             {FEATURES.map(f => (

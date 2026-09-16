@@ -5,11 +5,8 @@ import { salesService } from '../../services/salesService'
 import { pricingService } from '../../services/pricingService'
 import { useAuth } from '../../context/AuthContext'
 import { useProducts } from '../../hooks/useProducts'
-import { useLocations } from '../../hooks/useDeliveries'
 import { customerService } from '../../services/customerService'
-import { deliveryService } from '../../services/deliveryService'
 import { CustomerSelect } from '../../components/customers/CustomerSelect'
-import { LocationSelect } from '../../components/delivery/DeliveryStatusBadge'
 import BarcodeScanner from '../../components/barcode/BarcodeScanner'
 import { InvoicePreview } from '../../components/delivery/DeliveryStatusBadge'
 import Modal from '../../components/shared/Modal'
@@ -27,23 +24,14 @@ import { formatRangeLabel } from '../../utils/dateRange'
 const SaleModal = ({ open, onClose, onCreated }) => {
   const { user } = useAuth()
   const { products } = useProducts({ status: 'active' })
-  const { defaultLocation } = useLocations()
 
   const [customer,       setCustomer]       = useState(null)
-  const [locationId,     setLocationId]     = useState('')
   const [items,          setItems]          = useState([{ product_id: '', quantity: 1, unit_price: 0, subtotal: 0 }])
   const [paymentMethod,  setPaymentMethod]  = useState('cash')
   const [isCredit,       setIsCredit]       = useState(false)
   const [scannerOpen,    setScannerOpen]    = useState(false)
   const [saving,         setSaving]         = useState(false)
   const [discount,       setDiscount]       = useState(0)
-  const [createDelivery, setCreateDelivery] = useState(false)
-  const [driverName,     setDriverName]     = useState('')
-
-  // Set default location on open
-  useEffect(() => {
-    if (open && defaultLocation) setLocationId(String(defaultLocation.id))
-  }, [open, defaultLocation])
 
   // When customer changes, re-price all items
   useEffect(() => {
@@ -133,7 +121,6 @@ const SaleModal = ({ open, onClose, onCreated }) => {
         paymentMethod: isCredit ? 'credit' : paymentMethod,
         soldBy: user?.id,
         customerId: customer?.id || null,
-        locationId: locationId ? parseInt(locationId) : null,
         discountAmount: parseFloat(discount || 0),
         isCredit,
       })
@@ -142,18 +129,8 @@ const SaleModal = ({ open, onClose, onCreated }) => {
         await customerService.addToBalance(customer.id, total)
       }
 
-      if (createDelivery && customer) {
-        await deliveryService.create({
-          saleId: sale.id, customerId: customer.id,
-          locationId: locationId ? parseInt(locationId) : null,
-          driverName, deliveryAddress: customer.address,
-          scheduledDate: new Date().toISOString().slice(0, 10),
-          createdBy: user?.id,
-        })
-      }
-
       setItems([{ product_id: '', quantity: 1, unit_price: 0, subtotal: 0 }])
-      setCustomer(null); setDiscount(0); setIsCredit(false); setCreateDelivery(false)
+      setCustomer(null); setDiscount(0); setIsCredit(false)
       onCreated()
       onClose()
     } catch (err) { alert(err.message) }
@@ -176,20 +153,14 @@ const SaleModal = ({ open, onClose, onCreated }) => {
           </div>
         }
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 14px' }}>
-          <div className="form-group">
-            <label>Customer</label>
-            <CustomerSelect value={customer} onChange={setCustomer} />
-            {customer?.price_tiers?.discount_percent > 0 && (
-              <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
-                ✓ {customer.price_tiers.discount_percent}% tier discount applied
-              </div>
-            )}
-          </div>
-          <div className="form-group">
-            <label>Location / Branch</label>
-            <LocationSelect value={locationId} onChange={v => setLocationId(v || '')} showAll={false} />
-          </div>
+        <div className="form-group">
+          <label>Customer</label>
+          <CustomerSelect value={customer} onChange={setCustomer} />
+          {customer?.price_tiers?.discount_percent > 0 && (
+            <div style={{ fontSize: 11, color: '#22c55e', marginTop: 4 }}>
+              ✓ {customer.price_tiers.discount_percent}% tier discount applied
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -236,23 +207,12 @@ const SaleModal = ({ open, onClose, onCreated }) => {
               <input type="checkbox" checked={isCredit} onChange={e => setIsCredit(e.target.checked)} />
               Credit sale
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, fontWeight: 500, color: 'var(--text-secondary)', margin: 0 }}>
-              <input type="checkbox" checked={createDelivery} onChange={e => setCreateDelivery(e.target.checked)} />
-              Create delivery
-            </label>
           </div>
         </div>
 
         {isCredit && customer && customer.credit_limit > 0 && (
           <div style={{ marginTop: 10, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12.5, color: '#92400e' }}>
             Credit limit: {formatCurrency(customer.credit_limit)} · Current balance: {formatCurrency(customer.current_balance)} · After this sale: {formatCurrency((customer.current_balance || 0) + total)}
-          </div>
-        )}
-
-        {createDelivery && (
-          <div className="form-group" style={{ marginTop: 12 }}>
-            <label>Driver Name</label>
-            <input className="input-base" value={driverName} onChange={e => setDriverName(e.target.value)} placeholder="Assigned driver" />
           </div>
         )}
       </Modal>

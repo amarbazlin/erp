@@ -1,41 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, MapPin, Info } from 'lucide-react'
+import { ArrowLeft, Save, Info } from 'lucide-react'
 import { productService } from '../../services/productService'
-import { supplierService } from '../../services/supplierService'
-import { locationService } from '../../services/locationService'
 import { useCategories } from '../../hooks/useProducts'
-import { useLocations } from '../../hooks/useDeliveries'
 import Button from '../../components/shared/Button'
 import { PRODUCT_UNITS } from '../../utils/constants'
 
 const AddProduct = () => {
   const navigate = useNavigate()
   const { categories } = useCategories()
-  const { locations, defaultLocation, loading: locLoading } = useLocations()
-  const [suppliers, setSuppliers] = useState([])
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [form, setForm] = useState({
     product_code: '', product_name: '', category_id: '',
     supplier_id: '', quantity: 0, reorder_level: 10,
     buying_price: '', selling_price: '', unit: 'pcs',
-    status: 'active', location_id: '',
+    status: 'active',
   })
-
-  // Auto-select location
-  useEffect(() => {
-    if (locLoading) return
-    if (locations.length === 1) {
-      setForm(f => ({ ...f, location_id: String(locations[0].id) }))
-    } else if (defaultLocation) {
-      setForm(f => ({ ...f, location_id: String(defaultLocation.id) }))
-    }
-  }, [locations, defaultLocation, locLoading])
-
-  useEffect(() => {
-    supplierService.getAll({ status: 'active' }).then(setSuppliers).catch(console.error)
-  }, [])
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -53,10 +34,7 @@ const AddProduct = () => {
         buying_price:  parseFloat(form.buying_price),
         selling_price: parseFloat(form.selling_price),
       }
-      const product = await productService.create(payload)
-      if (form.location_id && payload.quantity > 0) {
-        await locationService.setStock(product.id, parseInt(form.location_id), payload.quantity)
-      }
+      await productService.create(payload)
       navigate('/inventory')
     } catch (err) {
       setError(err.message || 'Failed to save product')
@@ -68,9 +46,6 @@ const AddProduct = () => {
   const margin = form.buying_price && form.selling_price
     ? (((form.selling_price - form.buying_price) / form.buying_price) * 100).toFixed(1)
     : null
-
-  const onlyOne      = !locLoading && locations.length === 1
-  const selectedLoc  = locations.find(l => String(l.id) === String(form.location_id))
 
   return (
     <div className="page-wrapper" style={{ maxWidth: 820 }}>
@@ -114,13 +89,6 @@ const AddProduct = () => {
               </select>
             </div>
             <div className="form-group">
-              <label>Supplier</label>
-              <select className="input-base" value={form.supplier_id} onChange={set('supplier_id')}>
-                <option value="">Select supplier</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.supplier_name}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
               <label>Unit</label>
               <select className="input-base" value={form.unit} onChange={set('unit')}>
                 {PRODUCT_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
@@ -134,61 +102,6 @@ const AddProduct = () => {
               </select>
             </div>
           </div>
-        </div>
-
-        {/* Location assignment */}
-        <div className="card" style={{ padding: 24, marginBottom: 16 }}>
-          <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 700, marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid var(--card-border)' }}>
-            Stock Location
-          </h2>
-          {locLoading ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Loading locations…</p>
-          ) : locations.length === 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
-              <Info size={15} color="#d97706" />
-              <span style={{ fontSize: 13, color: '#92400e' }}>
-                No locations set up yet.{' '}
-                <button type="button" onClick={() => navigate('/locations')}
-                  style={{ color: '#f97316', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, padding: 0 }}>
-                  Add a location →
-                </button>
-              </span>
-            </div>
-          ) : onlyOne ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
-              <MapPin size={15} color="#16a34a" />
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#15803d' }}>{locations[0].name}</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                  Only one location — stock assigned here automatically.
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, fontSize: 12.5, color: 'var(--text-muted)' }}>
-                <Info size={13} />
-                You have {locations.length} locations. Choose where this product's stock will be held.
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label>Assign to location *</label>
-                <select className="input-base" value={form.location_id} onChange={set('location_id')} required>
-                  <option value="">Select location</option>
-                  {locations.map(l => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}{l.is_default ? ' (Default)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedLoc && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 12.5, color: '#16a34a' }}>
-                  <MapPin size={13} />
-                  Stock will be recorded under: <strong>{selectedLoc.name}</strong>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Stock & pricing */}

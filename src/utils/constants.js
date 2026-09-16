@@ -72,24 +72,6 @@ export const CUSTOMER_TYPE_COLORS = {
   vip:        '#22c55e',
 }
 
-// Order tracking / dispatch statuses
-export const DELIVERY_STATUS = {
-  PENDING:    'pending',
-  PACKED:     'packed',
-  DISPATCHED: 'dispatched',
-  DELIVERED:  'delivered',
-  RETURNED:   'returned',
-  FAILED:     'failed',
-  CANCELLED:  'cancelled',
-}
-
-// Return types
-export const RETURN_TYPES = {
-  SALE_RETURN:     'sale_return',
-  PURCHASE_RETURN: 'purchase_return',
-  DAMAGE:          'damage',
-}
-
 // Units for products
 export const PRODUCT_UNITS = [
   'pcs', 'kg', 'g', 'litre', 'ml', 'box', 'bag', 'roll',
@@ -105,45 +87,14 @@ export const DATE_RANGES = [
   { label: '1Y',  value: 365 },
 ]
 
-// Sri Lankan months (for seasonal analysis)
-export const SL_MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
-
-// Key Sri Lankan seasonal events that affect hardware demand
-export const SL_SEASONAL_EVENTS = [
-  { month: 3,  label: 'Sinhala New Year',   impact: 'high',   note: 'Construction boom, gifting hardware sets' },
-  { month: 4,  label: 'Post-Avurudu',       impact: 'high',   note: 'Peak construction, home renovation season' },
-  { month: 4,  label: 'Monsoon prep',        impact: 'medium', note: 'Roofing, drainage, waterproofing demand rises' },
-  { month: 5,  label: 'Vesak',              impact: 'medium', note: 'Electrical fittings, lighting demand up' },
-  { month: 10, label: 'North-East Monsoon', impact: 'medium', note: 'Roofing materials, sealants high demand' },
-  { month: 11, label: 'Year-end builds',    impact: 'high',   note: 'Government projects accelerate before year-end' },
-  { month: 12, label: 'Christmas/New Year', impact: 'medium', note: 'Renovation & gifting season' },
-]
-
 // Sidebar nav items — centralised so both Sidebar and Routes use same structure
 export const NAV_ITEMS = [
   { path: '/',             label: 'Dashboard',   icon: 'LayoutDashboard', exact: true },
   { path: '/inventory',    label: 'Inventory',   icon: 'Package'   },
   { path: '/customers',    label: 'Customers',   icon: 'Users2'    },
   { path: '/sales',        label: 'Sales',       icon: 'ShoppingCart' },
-  { path: '/purchases',    label: 'Purchases',   icon: 'Truck'     },
   { path: '/returns',      label: 'Returns',     icon: 'RotateCcw' },
-  { path: '/order-tracking', label: 'Order Tracking', icon: 'ClipboardList' },
-  { path: '/suppliers',    label: 'Suppliers',   icon: 'Building2' },
-  { path: '/locations',    label: 'Locations',   icon: 'Store'     },
   { path: '/analytics',    label: 'Analytics',   icon: 'BarChart3' },
   { path: '/alerts',       label: 'Alerts',      icon: 'Bell',  badge: true },
-  {
-    label: 'AI Intelligence', icon: 'Sparkles', key: 'ai',
-    children: [
-      { path: '/ai/forecasting',    label: 'Forecasting'          },
-      { path: '/ai/recommendations',label: 'Smart Reorder'        },
-      { path: '/ai/anomaly',        label: 'Anomaly Detection'    },
-      { path: '/ai/seasonal',       label: 'Seasonal Demand'      },
-      { path: '/ai/supplier-discovery', label: 'Supplier Discovery' },
-    ],
-  },
   { path: '/settings', label: 'Settings', icon: 'Settings' },
 ]
