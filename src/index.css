@@ -90,8 +90,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Page layout ── */
 .page-wrapper {
-  padding: 24px 28px;
-  max-width: 1400px;
+  padding: 18px 22px;
+  max-width: 100%;
   animation: fadeIn 0.25s ease;
 }
 
@@ -353,6 +353,26 @@ select.input-base { cursor: pointer; }
   .data-table { min-width: 520px; }
 
   .hide-tablet { display: none !important; }
+}
+
+/* ── POS responsive: stack cart under the product grid on mobile ── */
+@media (max-width: 768px) {
+  .pos-root {
+    flex-direction: column-reverse !important;
+    height: auto !important;
+    gap: 14px !important;
+    padding: 12px 12px 32px !important;
+  }
+  .pos-products { overflow: visible !important; }
+  .pos-cart {
+    width: 100% !important;
+    max-height: 60vh;
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.12);
+  }
+  .pos-cart > div:first-child { max-height: 34vh; }
 }
 
 /* ── Mobile: 768px ──────────────────────── */

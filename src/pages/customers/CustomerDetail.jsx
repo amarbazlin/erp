@@ -33,7 +33,7 @@ const CustomerDetail = () => {
   ]
 
   return (
-    <div className="page-wrapper" style={{ maxWidth: 960, paddingBottom: 40 }}>
+    <div className="page-wrapper" style={{ paddingBottom: 40 }}>
       {/* Back */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <button onClick={() => navigate('/customers')} style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

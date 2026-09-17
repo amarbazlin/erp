@@ -145,7 +145,7 @@ const Settings = () => {
   ]
 
   return (
-    <div className="page-wrapper" style={{ maxWidth: 860, paddingBottom: 40 }}>
+    <div className="page-wrapper" style={{ paddingBottom: 40 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">Manage your account and preferences</p>

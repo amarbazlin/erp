@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Plus, RefreshCw, Package, Pencil, Power, AlertTriangle, ArrowDownToLine, SlidersHorizontal } from 'lucide-react'
-import { inventoryService, inventoryCategoryService } from '../../services/inventoryService'
+import { inventoryService } from '../../services/inventoryService'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../../components/shared/Modal'
 import Button from '../../components/shared/Button'
@@ -29,7 +29,7 @@ export const stockStatus = (item) => {
 }
 
 const EMPTY_FORM = {
-  name: '', sku: '', category_id: '', unit: 'g',
+  name: '', sku: '', unit: 'g',
   cost_per_unit: '', current_quantity: '', low_stock_threshold: '',
   supplier_name: '', supplier_phone: '',
 }
@@ -57,16 +57,13 @@ const restockStyle = {
 const Materials = () => {
   const { user } = useAuth()
   const [items, setItems] = useState([])
-  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
-  const [selectedCat, setSelectedCat] = useState('')
   const [message, setMessage] = useState(null)
 
   const [editor, setEditor] = useState(null)          // { mode, item }
   const [form, setForm] = useState(EMPTY_FORM)
-  const [newCategory, setNewCategory] = useState('')
 
   const [movement, setMovement] = useState(null)       // { item, type }
   const [moveForm, setMoveForm] = useState(EMPTY_MOVEMENT)
@@ -84,12 +81,8 @@ const Materials = () => {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [data, cats] = await Promise.all([
-        inventoryService.getAll({ activeOnly: false }),
-        inventoryCategoryService.getAll(),
-      ])
+      const data = await inventoryService.getAll({ activeOnly: false })
       setItems(data || [])
-      setCategories(cats || [])
     } catch (err) {
       notify('error', 'Could not load raw materials: ' + err.message)
     } finally {
@@ -101,17 +94,16 @@ const Materials = () => {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const openCreate = () => { setForm(EMPTY_FORM); setNewCategory(''); setEditor({ mode: 'create' }) }
+  const openCreate = () => { setForm(EMPTY_FORM); setEditor({ mode: 'create' }) }
 
   const openEdit = (item) => {
     setForm({
-      name: item.name || '', sku: item.sku || '', category_id: item.category_id || '',
+      name: item.name || '', sku: item.sku || '',
       unit: item.unit || 'g',
       cost_per_unit: item.cost_per_unit ?? '',
       low_stock_threshold: item.low_stock_threshold ?? '',
       supplier_name: item.supplier_name || '', supplier_phone: item.supplier_phone || '',
     })
-    setNewCategory('')
     setEditor({ mode: 'edit', item })
   }
 
@@ -124,14 +116,6 @@ const Materials = () => {
     })
   }
 
-  const resolveCategoryId = async () => {
-    const name = newCategory.trim()
-    if (!name) return form.category_id || null
-    const created = await inventoryCategoryService.create({ name })
-    setCategories((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
-    return created.id
-  }
-
   const handleSaveMaterial = async (e) => {
     e.preventDefault()
     const cost = parseFloat(form.cost_per_unit)
@@ -142,11 +126,9 @@ const Materials = () => {
 
     setSaving(true)
     try {
-      const category_id = await resolveCategoryId()
       const payload = {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
-        category_id,
         unit: form.unit,
         cost_per_unit: cost,
         low_stock_threshold: threshold,
@@ -233,13 +215,12 @@ const Materials = () => {
   }
   const displayItems = useMemo(() => {
     let list = items
-    if (selectedCat) list = list.filter(i => String(i.category_id) === String(selectedCat))
     if (search) {
       const s = search.toLowerCase()
       list = list.filter(i => i.name.toLowerCase().includes(s) || (i.sku || '').toLowerCase().includes(s))
     }
     return list
-  }, [items, selectedCat, search])
+  }, [items, search])
 
   const totalValue = displayItems.reduce((s, i) =>
     s + (parseFloat(i.current_quantity) || 0) * ((parseFloat(i.cost_per_unit) || 0) / 1000), 0)
@@ -301,10 +282,6 @@ const Materials = () => {
       {/* Filters */}
       <div className="card" style={{ padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <SearchBar value={search} onChange={setSearch} placeholder="Search materials or SKUs…" width={260} />
-        <select className="input-base" value={selectedCat} onChange={e => setSelectedCat(e.target.value)} style={{ width: 180 }}>
-          <option value="">All Categories</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
       </div>
 {/* Table */}
       <div className="card">
@@ -314,7 +291,6 @@ const Materials = () => {
               <tr>
                 <th>Material</th>
                 <th>SKU</th>
-                <th>Category</th>
                 <th>Stock</th>
                 <th>Cost / kg</th>
                 <th>Value</th>
@@ -344,7 +320,6 @@ const Materials = () => {
                       {!item.is_active && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Inactive</div>}
                     </td>
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.sku || '—'}</td>
-                    <td>{item.inventory_categories?.name || '—'}</td>
                     <td>
                       <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>{qty} {item.unit}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>approx {fmtQty(qty, item.unit)}</div>
@@ -400,17 +375,6 @@ const Materials = () => {
               <div className="form-group">
                 <label>SKU</label>
                 <input className="input-base" value={form.sku} onChange={set('sku')} placeholder="RM-CHOC-001" />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select className="input-base" value={form.category_id} onChange={set('category_id')} disabled={!!newCategory.trim()}>
-                  <option value="">Select category</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>New category (optional)</label>
-                <input className="input-base" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Packaging" />
               </div>
               <div className="form-group">
                 <label>Unit *</label>

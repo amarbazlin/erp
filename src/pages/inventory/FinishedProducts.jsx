@@ -29,7 +29,7 @@ const FinishedProducts = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
-  const [selectedCat, setSelectedCat] = useState('')
+
   const [message, setMessage] = useState(null)
   const [toggleTarget, setToggleTarget] = useState(null)
 
@@ -57,14 +57,8 @@ const FinishedProducts = () => {
 
   useEffect(() => { load() }, [load])
 
-  const categories = useMemo(
-    () => [...new Set(products.map(p => p.product_categories?.name).filter(Boolean))],
-    [products]
-  )
-
   const displayProducts = useMemo(() => {
     let list = products
-    if (selectedCat) list = list.filter(p => p.product_categories?.name === selectedCat)
     if (search) {
       const s = search.toLowerCase()
       list = list.filter(p =>
@@ -72,7 +66,7 @@ const FinishedProducts = () => {
       )
     }
     return list
-  }, [products, selectedCat, search])
+  }, [products, search])
 
   const outOfStock = displayProducts.filter(p => p.available_stock <= 0).length
   const lowStock = displayProducts.filter(p => p.available_stock > 0 && p.available_stock <= LOW_STOCK_PRODUCTS).length
@@ -156,10 +150,6 @@ const FinishedProducts = () => {
       {/* Filters */}
       <div className="card" style={{ padding: '12px 18px', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <SearchBar value={search} onChange={setSearch} placeholder="Search products or SKUs…" width={260} />
-        <select className="input-base" value={selectedCat} onChange={e => setSelectedCat(e.target.value)} style={{ width: 180 }}>
-          <option value="">All Categories</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
       </div>
 
       {/* Table */}
@@ -169,7 +159,6 @@ const FinishedProducts = () => {
             <thead>
               <tr>
                 <th>Product</th>
-                <th>Category</th>
                 <th>Recipe Cost</th>
                 <th>Selling Price</th>
                 <th>Est. Profit</th>
@@ -209,7 +198,6 @@ const margin = p.profit_margin
                         </div>
                       </div>
                     </td>
-                    <td>{p.product_categories?.name || '—'}</td>
                     <td style={{ fontWeight: 600 }}>{formatCurrency(p.recipe_cost)}</td>
                     <td>{formatCurrency(p.selling_price)}</td>
                     <td style={{ fontWeight: 600, color: p.estimated_profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>

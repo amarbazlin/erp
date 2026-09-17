@@ -63,7 +63,7 @@ const Navbar = ({ alertCount = 0, onToggleSidebar, isMobile }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AppLogo size={24} />
             <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Forgera OS
+                            Forgera ERP
             </span>
           </div>
         )}

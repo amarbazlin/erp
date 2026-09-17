@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2, ImagePlus, X } from 'lucide-react'
-import { productService, categoryService } from '../../services/productService'
+import { productService } from '../../services/productService'
 import { inventoryService } from '../../services/inventoryService'
 import Button from '../../components/shared/Button'
 import Loader from '../../components/shared/Loader'
@@ -17,7 +17,6 @@ const EditProduct = () => {
   const { id } = useParams()
   const backTo = location.state?.from === 'inventory' ? '/inventory' : '/products'
 
-  const [categories, setCategories] = useState([])
   const [materials, setMaterials] = useState([])
   const [form, setForm] = useState(null)
   const [recipeItems, setRecipeItems] = useState([])
@@ -33,18 +32,15 @@ const EditProduct = () => {
     const load = async () => {
       setLoading(true)
       try {
-        const [product, cats, mats, recipe] = await Promise.all([
+        const [product, mats, recipe] = await Promise.all([
           productService.getById(id),
-          categoryService.getAll(),
           inventoryService.getAll({ activeOnly: true }),
           productService.getRecipe(id),
         ])
-        setCategories(cats || [])
         setMaterials(mats || [])
         setForm({
           name: product.name || '',
           sku: product.sku || '',
-          category_id: product.category_id || '',
           description: product.description || '',
           image_url: product.image_url || '',
           selling_price: product.selling_price ?? '',
@@ -131,7 +127,6 @@ const EditProduct = () => {
       await productService.update(id, {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
-        category_id: form.category_id || null,
         description: form.description.trim() || null,
         image_url: form.image_url || null,
         selling_price: price,
@@ -157,7 +152,7 @@ const EditProduct = () => {
   if (!form) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Product not found</div>
 
 return (
-    <div className="page-wrapper" style={{ maxWidth: 860 }}>
+    <div className="page-wrapper">
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <button
           onClick={() => navigate(backTo)}
@@ -208,13 +203,6 @@ return (
             <div className="form-group">
               <label>SKU</label>
               <input className="input-base" value={form.sku} onChange={set('sku')} />
-            </div>
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label>Category</label>
-              <select className="input-base" value={form.category_id} onChange={set('category_id')}>
-                <option value="">Select category</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
             </div>
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Description</label>

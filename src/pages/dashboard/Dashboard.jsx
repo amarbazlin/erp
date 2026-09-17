@@ -240,7 +240,6 @@ const Dashboard = () => {
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Category</th>
                   <th>Stock</th>
                   <th>Reorder At</th>
                   <th>Status</th>
@@ -248,16 +247,15 @@ const Dashboard = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24 }}><Loader /></td></tr>
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24 }}><Loader /></td></tr>
                 ) : lowStockProducts.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>✓ All products are well stocked</td></tr>
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>✓ All products are well stocked</td></tr>
                 ) : lowStockProducts.map(p => (
                   <tr key={p.id}>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{p.product_name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.product_code}</div>
                     </td>
-                    <td style={{ fontSize: 12.5 }}>{p.categories?.name || '—'}</td>
                     <td style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, color: p.quantity === 0 ? 'var(--danger)' : 'var(--warning)' }}>{p.quantity}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{p.reorder_level}</td>
                     <td><StockStatusBadge quantity={p.quantity} reorderLevel={p.reorder_level} /></td>
@@ -279,10 +277,6 @@ const Dashboard = () => {
                   <div key={p.id} className="mobile-data-card">
                     <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)' }}>{p.product_name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>{p.product_code}</div>
-                    <div className="mobile-data-card-row">
-                      <span className="mobile-data-card-label">Category</span>
-                      <span>{p.categories?.name || '—'}</span>
-                    </div>
                     <div className="mobile-data-card-row">
                       <span className="mobile-data-card-label">Stock</span>
                       <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, color: p.quantity === 0 ? 'var(--danger)' : 'var(--warning)' }}>{p.quantity}</span>

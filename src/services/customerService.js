@@ -42,6 +42,25 @@ export const customerService = {
     return data
   },
 
+  // POS helper: find a customer by exact phone number, creating one if missing.
+  // full_name is optional in the workflow — when absent, the phone doubles as the display name.
+  resolveByPhone: async (phone) => {
+    const digits = (phone || '').trim()
+    if (!digits) return null
+    const { data: existing, error: findErr } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('phone', digits)
+      .maybeSingle()
+    if (findErr) throw findErr
+    if (existing) return existing
+    return await customerService.create({
+      full_name: digits,          // falls back to the phone as the display name
+      phone: digits,
+      customer_type: 'retail',
+    })
+  },
+
   update: async (id, updates) => {
     const { data, error } = await supabase
       .from('customers')

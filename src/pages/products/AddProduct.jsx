@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2, ImagePlus, X } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { inventoryService } from '../../services/inventoryService'
-import { useCategories } from '../../hooks/useProducts'
 import Button from '../../components/shared/Button'
 import { formatCurrency } from '../../utils/formatters'
 import { calcRecipeCost } from '../../utils/calculations'
@@ -16,7 +15,6 @@ const AddProduct = () => {
   const location = useLocation()
   const backTo = location.state?.from === 'inventory' ? '/inventory' : '/products'
 
-  const { categories } = useCategories()
   const [materials, setMaterials] = useState([])
   const [recipeItems, setRecipeItems] = useState([emptyRow()])
   const [saving, setSaving] = useState(false)
@@ -26,7 +24,7 @@ const AddProduct = () => {
   const fileRef = useRef(null)
 
   const [form, setForm] = useState({
-    name: '', sku: '', category_id: '', description: '',
+    name: '', sku: '', description: '',
     image_url: '', selling_price: '', is_active: true,
   })
 
@@ -102,7 +100,6 @@ const AddProduct = () => {
       const product = await productService.create({
         name: form.name.trim(),
         sku: form.sku.trim() || null,
-        category_id: form.category_id || null,
         description: form.description.trim() || null,
         image_url: form.image_url || null,
         selling_price: price,
@@ -126,7 +123,7 @@ const AddProduct = () => {
     }
   }
 return (
-    <div className="page-wrapper" style={{ maxWidth: 860 }}>
+    <div className="page-wrapper">
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <button
           onClick={() => navigate(backTo)}
@@ -161,13 +158,6 @@ return (
             <div className="form-group">
               <label>SKU</label>
               <input className="input-base" value={form.sku} onChange={set('sku')} placeholder="SWEET-001" />
-            </div>
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label>Category</label>
-              <select className="input-base" value={form.category_id} onChange={set('category_id')}>
-                <option value="">Select category</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
             </div>
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Description</label>

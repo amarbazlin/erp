@@ -14,7 +14,6 @@ import { calcMargin } from '../../utils/calculations'
 const Products = () => {
   const navigate = useNavigate()
   const [search, setSearch]     = useState('')
-  const [selectedCat, setSelectedCat] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [costs, setCosts] = useState({})
@@ -27,14 +26,8 @@ const Products = () => {
     }).catch(console.error)
   }, [products])
 
-  const categories = useMemo(
-    () => [...new Set(products.map(p => p.product_categories?.name).filter(Boolean))],
-    [products]
-  )
-
   const displayProducts = useMemo(() => {
     let list = products
-    if (selectedCat) list = list.filter(p => p.product_categories?.name === selectedCat)
     if (search) {
       const s = search.toLowerCase()
       list = list.filter(p =>
@@ -42,7 +35,7 @@ const Products = () => {
       )
     }
     return list
-  }, [products, selectedCat, search])
+  }, [products, search])
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -74,12 +67,6 @@ const Products = () => {
 
       {/* Filters */}<div className="card" style={{ padding: '12px 18px', marginBottom: 16 }}>
         <SearchBar value={search} onChange={setSearch} placeholder="Search products or SKUs…" width={260} />
-        <select className="input-base" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} style={{ width: 170 }}>
-          <option value="">All Categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
       </div>
 
       {/* Table */}<div className="card">
@@ -89,7 +76,6 @@ const Products = () => {
               <tr>
                 <th>Product</th>
                 <th>SKU</th>
-                <th>Category</th>
                 <th>Cost</th>
                 <th>Price</th>
                 <th>Margin</th>
@@ -118,7 +104,6 @@ const Products = () => {
                         </div>
                       </td>
                       <td>{p.sku || '—'}</td>
-                      <td>{p.product_categories?.name || '—'}</td>
                       <td>{formatCurrency(cost)}</td>
                       <td>{formatCurrency(price)}</td>
                       <td style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, color: margin >= 0 ? 'var(--success)' : 'var(--danger)' }}>{margin.toFixed(1)}%</td>

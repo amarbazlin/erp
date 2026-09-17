@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 import { TrendingUp, BarChart3, RefreshCw } from 'lucide-react'
@@ -30,26 +30,21 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 )
 
-const CATEGORY_COLORS = ['#f97316', '#3b82f6', '#22c55e', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4']
-
 const Analytics = () => {
   const [loading, setLoading] = useState(true)
   const [revenue, setRevenue] = useState([])
-  const [categories, setCategories] = useState([])
   const [trend, setTrend] = useState([])
   const [stockHealth, setStockHealth] = useState([])
 
   const load = async () => {
     setLoading(true)
     try {
-      const [rev, cats, tr, health] = await Promise.all([
+      const [rev, tr, health] = await Promise.all([
         analyticsService.getRevenueChart(90),
-        analyticsService.getCategoryBreakdown(),
         analyticsService.getPurchaseSaleTrend(6),
         analyticsService.getStockHealth(),
       ])
       setRevenue(rev)
-      setCategories(cats)
       setTrend(tr)
       setStockHealth(health)
     } catch (err) {
@@ -93,7 +88,7 @@ const Analytics = () => {
         )}
       </div>
 
-      {/* Purchase vs Sales trend + Category breakdown */}
+      {/* Purchase vs Sales trend */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
         {/* Purchase vs Sales */}
         <div className="card" style={{ padding: '20px 24px' }}>
@@ -113,32 +108,6 @@ const Analytics = () => {
           )}
         </div>
 
-        {/* Category value breakdown */}
-        <div className="card" style={{ padding: '20px 24px' }}>
-          <SectionHeader title="Stock Value by Category" subtitle="Inventory value distribution" />
-          {loading ? <div className="skeleton" style={{ height: 200, borderRadius: 10 }} /> : (
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie data={categories.slice(0, 7)} dataKey="value" innerRadius={45} outerRadius={72} paddingAngle={3} strokeWidth={0}>
-                    {categories.slice(0, 7).map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{ flex: 1 }}>
-                {categories.slice(0, 7).map((c, i) => (
-                  <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f3f4f6', fontSize: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 99, background: CATEGORY_COLORS[i % CATEGORY_COLORS.length], flexShrink: 0 }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
-                    </div>
-                    <span style={{ fontWeight: 700, fontFamily: 'Outfit, sans-serif', fontSize: 12 }}>{formatCurrencyShort(c.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Stock health breakdown */}

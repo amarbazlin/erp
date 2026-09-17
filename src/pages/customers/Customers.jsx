@@ -19,16 +19,16 @@ const TYPE_COLORS = { retail: '#3b82f6', contractor: '#f97316', wholesale: '#8b5
 
 const CustomerForm = ({ initial = {}, tiers = [], onSave, onCancel, saving }) => {
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '',
-    customer_type: 'retail', credit_limit: 0,
-    price_tier_id: '', notes: '', status: 'active', ...initial,
+    name: initial.full_name || initial.name || '', phone: initial.phone || '', email: initial.email || '', address: initial.address || '',
+    customer_type: initial.customer_type || 'retail', credit_limit: initial.credit_limit || 0,
+    price_tier_id: initial.price_tier_id || '', notes: initial.notes || '', status: initial.status || 'active',
   })
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-        <div className="form-group"><label>Full Name *</label><input className="input-base" value={form.name} onChange={set('name')} required /></div>
-        <div className="form-group"><label>Phone</label><input className="input-base" value={form.phone} onChange={set('phone')} placeholder="07XXXXXXXX" /></div>
+        <div className="form-group"><label>Phone *</label><input className="input-base" value={form.phone} onChange={set('phone')} placeholder="07XXXXXXXX" required /></div>
+        <div className="form-group"><label>Full Name (optional)</label><input className="input-base" value={form.name} onChange={set('name')} /></div>
         <div className="form-group"><label>Email</label><input className="input-base" type="email" value={form.email} onChange={set('email')} /></div>
         <div className="form-group"><label>Customer Type</label>
           <select className="input-base" value={form.customer_type} onChange={set('customer_type')}>
@@ -82,7 +82,15 @@ const Customers = () => {
   const handleSave = async (form) => {
     setSaving(true)
     try {
-      const payload = { ...form, credit_limit: parseFloat(form.credit_limit) || 0, price_tier_id: form.price_tier_id || null }
+      if (!form.phone?.trim()) { alert('Phone number is required'); setSaving(false); return }
+      // full_name is NOT NULL in the DB — fall back to the phone number when no name is given
+      const payload = {
+        ...form,
+        full_name: form.name?.trim() || form.phone.trim(),
+        credit_limit: parseFloat(form.credit_limit) || 0,
+        price_tier_id: form.price_tier_id || null,
+      }
+      delete payload.name
       if (modalType === 'edit') await customerService.update(selected.id, payload)
       else await customerService.create(payload)
       setModalType(null)
@@ -184,10 +192,10 @@ const Customers = () => {
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 9, background: `${TYPE_COLORS[c.customer_type] || '#6b7280'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: TYPE_COLORS[c.customer_type] || '#6b7280', fontFamily: 'Outfit, sans-serif', flexShrink: 0 }}>
-                      {c.name?.charAt(0)?.toUpperCase()}
+                      {c.full_name?.charAt(0)?.toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)' }}>{c.name}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)' }}>{c.full_name}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
                         {c.phone && <span><Phone size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />{c.phone}</span>}
                       </div>
@@ -224,7 +232,7 @@ const Customers = () => {
       </Modal>
 
       {/* Payment modal */}
-      <Modal open={!!payModal} onClose={() => setPayModal(null)} title={`Record Payment — ${payModal?.name}`} width={400}
+      <Modal open={!!payModal} onClose={() => setPayModal(null)} title={`Record Payment — ${payModal?.full_name || payModal?.phone || ''}`} width={400}
         footer={<><Button variant="secondary" onClick={() => setPayModal(null)}>Cancel</Button><Button loading={paying} onClick={handleRecordPayment}>Record Payment</Button></>}>
         {payModal && (
           <div>

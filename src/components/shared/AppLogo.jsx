@@ -6,7 +6,7 @@ import logoSrc from '../../assets/logo.png'
 const AppLogo = ({ size = 30, style = {}, className = '' }) => (
   <img
     src={logoSrc}
-    alt="Forgera OS"
+        alt="Forgera ERP"
     width={size}
     height={size}
     className={`app-logo ${className}`}

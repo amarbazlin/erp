@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react'
 import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X } from 'lucide-react'
-import { usePosProducts, useCategories } from '../../hooks/useProducts'
+import { usePosProducts } from '../../hooks/useProducts'
 import { salesService, createPosSale } from '../../services/salesService'
 import { useAuth } from '../../context/AuthContext'
-import CustomerSelect from '../../components/customers/CustomerSelect'
+import { customerService } from '../../services/customerService'
 import Modal from '../../components/shared/Modal'
 import Button from '../../components/shared/Button'
 import Loader from '../../components/shared/Loader'
@@ -24,12 +24,10 @@ const qtyBtn = {
 const Pos = () => {
   const { user, profile } = useAuth()
   const { products, loading, refetch } = usePosProducts()
-  const { categories } = useCategories()
 
   const [search,        setSearch]        = useState('')
-  const [selectedCat,   setSelectedCat]   = useState(null)
   const [cart,          setCart]          = useState([])   // { product, quantity }
-  const [customerId,    setCustomerId]    = useState(null)
+  const [customerPhone, setCustomerPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [discount,      setDiscount]      = useState(0)
   const [saving,        setSaving]        = useState(false)
@@ -38,13 +36,12 @@ const Pos = () => {
 
   const filtered = useMemo(() => {
     let list = products
-    if (selectedCat) list = list.filter(p => p.category_id === selectedCat)
     if (search) {
       const s = search.toLowerCase()
       list = list.filter(p => p.name.toLowerCase().includes(s) || (p.sku || '').toLowerCase().includes(s))
     }
     return list
-  }, [products, selectedCat, search])
+  }, [products, search])
 
   const subtotal = cart.reduce((s, c) => s + c.product.selling_price * c.quantity, 0)
   const discountValue = Math.min(Math.max(parseFloat(discount) || 0, 0), subtotal)
@@ -88,11 +85,22 @@ const Pos = () => {
         unit_price: c.product.selling_price,
         unit_cost:  c.product.calculated_cost || 0,
       }))
+      // Resolve (or auto-create) the customer from the entered phone number
+      let resolvedCustomerId = null
+      try {
+        if (customerPhone.trim()) {
+          const cust = await customerService.resolveByPhone(customerPhone)
+          resolvedCustomerId = cust?.id || null
+        }
+      } catch (custErr) {
+        console.error('Customer lookup failed:', custErr)
+        // Sale still proceeds as walk-in if the lookup fails
+      }
       const result = await createPosSale({
         items,
         paymentMethod,
         cashierId: profile?.id || user?.id,
-        customerId,
+        customerId: resolvedCustomerId,
         discount: discountValue,
       })
       const sale = result?.sale || result
@@ -139,25 +147,14 @@ const Pos = () => {
   if (loading) return <Loader fullPage label="Loading products…" />
 
   return (
-    <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 90px)' }}>
+    <div className="pos-root" style={{ display: 'flex', gap: 20, height: 'calc(100vh - 90px)' }}>
       {/* ── RIGHT: Product grid ── */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="pos-products" style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input-base" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 34 }} />
           </div>
-          <button
-            onClick={() => setSelectedCat(null)}
-            style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--card-border)', background: !selectedCat ? '#f97316' : 'var(--card-bg)', color: !selectedCat ? '#fff' : 'var(--text-secondary)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-          >All</button>
-          {categories.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCat(c.id)}
-              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--card-border)', background: selectedCat === c.id ? '#f97316' : 'var(--card-bg)', color: selectedCat === c.id ? '#fff' : 'var(--text-secondary)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-            >{c.name}</button>
-          ))}
         </div>
 
         {filtered.length === 0 ? (
@@ -219,7 +216,7 @@ const Pos = () => {
       </div>
 
       {/* ── LEFT: Cart / order panel ── */}
-      <div style={{ width: 350, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)' }}>
+      <div className="pos-cart" style={{ width: 350, flexShrink: 0, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)' }}>
         <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, margin: '0 0 12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Order ({cart.reduce((s, c) => s + c.quantity, 0)} items)
@@ -307,7 +304,14 @@ const Pos = () => {
             ))}
           </select>
 
-          <CustomerSelect value={customerId} onChange={setCustomerId} />
+          <input
+            className="input-base"
+            placeholder="Customer phone (optional)"
+            value={customerPhone}
+            onChange={e => setCustomerPhone(e.target.value)}
+            style={{ width: '100%', marginBottom: 12, fontSize: 12.5 }}
+            inputMode="tel"
+          />
 
           <Button
             variant="primary"

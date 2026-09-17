@@ -49,7 +49,7 @@ const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
         <div style={S.logoArea}>
           <div style={S.logoIcon}><AppLogo size={26} /></div>
           <div style={{ flex: 1 }}>
-            <div style={S.logoText}>Forgera OS</div>
+            <div style={S.logoText}>Forgera ERP</div>
             <div style={S.logoSub}>Inventory Intelligence</div>
           </div>
           {/* Close button — mobile only */}
@@ -111,7 +111,7 @@ const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
           <div style={S.footerIcon}><Sparkles size={13} color="#f97316" /></div>
           <div>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
-              ForgeraOS v2.0
+              ForgeraERP v2.0
             </div>
             <div style={{ fontSize: 10.5, color: '#4b5563', marginTop: 1 }}>Powered by Forgera</div>
           </div>
