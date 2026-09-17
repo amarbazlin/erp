@@ -18,6 +18,8 @@ import Inventory      from '../pages/inventory/Inventory'
 import Customers      from '../pages/customers/Customers'
 import CustomerDetail from '../pages/customers/CustomerDetail'
 import Settings       from '../pages/settings/Settings'
+import Finance from '../pages/finance/Finance'
+
 
 // Access denied
 import { AccessDenied } from '../components/auth/RoleGuard'
@@ -57,6 +59,8 @@ const AppRoutes = () => (
           <Route path="/customers"     element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetail />} />
         </Route>
+
+        <Route path="/finance" element={<Finance />} />
 
         {/* Legacy Analytics links now open the unified Dashboard. */}
         <Route path="/analytics" element={<Navigate to="/" replace />} />

@@ -72,6 +72,7 @@ export const NAV_ITEMS = [
   { path: '/pos',          label: 'POS / Sales', icon: 'ShoppingCart' },
   { path: '/products',     label: 'Products',    icon: 'Cake'      },
   { path: '/inventory',    label: 'Inventory',   icon: 'Package'   },
+  { path: '/finance',      label: 'Finance',     icon: 'Wallet'    },
   { path: '/customers',    label: 'Customers',   icon: 'Users2'    },
   { path: '/settings',     label: 'Settings',    icon: 'Settings'  },
 ]

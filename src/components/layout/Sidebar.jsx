@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Cake, Settings, Sparkles, X
+  Cake, Settings, Sparkles, X, Wallet
 } from 'lucide-react'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -10,7 +10,7 @@ import AppLogo from '../shared/AppLogo'
 
 const ICON_MAP = {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Cake, Settings,
+  Cake, Settings, Wallet,
 }
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { path: '/pos',        label: 'POS / Sales', icon: 'ShoppingCart',                  permission: P.VIEW_SALES        },
   { path: '/products',   label: 'Products',   icon: 'Cake',                          permission: P.VIEW_PRODUCTS     },
   { path: '/inventory',  label: 'Inventory',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
+  { path: '/finance',     label: 'Finance',    icon: 'Wallet', permission: null },
   { path: '/customers',  label: 'Customers',  icon: 'Users2',                        permission: P.VIEW_CUSTOMERS    },
 ]
 
