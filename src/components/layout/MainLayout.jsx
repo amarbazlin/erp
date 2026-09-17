@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
+import MobileNavigation from './MobileNavigation'
 import { supabase } from '../../services/supabase'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 
@@ -50,7 +51,7 @@ const MainLayout = () => {
   const closeSidebar  = () => setSidebarOpen(false)
 
   return (
-    <div style={styles.root}>
+    <div className="app-shell" style={styles.root}>
       {/* ── Backdrop (mobile only) ── */}
       {isCompact && (
         <div
@@ -80,9 +81,10 @@ const MainLayout = () => {
           onToggleSidebar={toggleSidebar}
           isMobile={isCompact}
         />
-        <div style={styles.content}>
+        <div className="app-content" style={styles.content}>
           <Outlet />
         </div>
+        {isMobile && <MobileNavigation onMenu={toggleSidebar} menuOpen={sidebarOpen} />}
       </div>
     </div>
   )

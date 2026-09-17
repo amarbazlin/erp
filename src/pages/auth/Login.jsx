@@ -27,7 +27,7 @@ const Login = () => {
   }
 
   return (
-    <div style={S.root}>
+    <div className="login-screen" style={S.root}>
       <div style={S.card}>
         {/* Brand */}
         <div style={S.brand}>

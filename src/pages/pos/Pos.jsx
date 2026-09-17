@@ -88,6 +88,10 @@ const Pos = () => {
   //    invoice preview with the real invoice number from the database. ──
   const handleProceed = async () => {
     if (cart.length === 0 || saving) return
+    if (!navigator.onLine) {
+      setError('You are offline. Reconnect and refresh stock before completing a sale.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
