@@ -345,7 +345,7 @@ const Pos = () => {
                 <div className="tr-muted">— Sale Receipt —</div>
               </div>
               <div className="tr-divider" />
-              <div className="tr-row"><span>Invoice</span><span>{receipt.invoice_number}</span></div>
+              <div className="tr-row"><span>Order No.</span><span>{receipt.invoice_number}</span></div>
               <div className="tr-row"><span>Date</span><span>{new Date(receipt.created_at).toLocaleString()}</span></div>
               <div className="tr-row"><span>Cashier</span><span>{receipt.cashier_name}</span></div>
               <div className="tr-row"><span>Customer</span><span>{receipt.customer_name || 'Walk-in'}</span></div>
