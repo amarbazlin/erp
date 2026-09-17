@@ -1150,4 +1150,21 @@ CREATE TRIGGER on_auth_user_created
 INSERT INTO public.users (id, email, full_name, role, password_hash)
 SELECT u.id, u.email, COALESCE(u.raw_user_meta_data->>'full_name', 'Staff'), 'admin', 'managed-by-supabase-auth'
 FROM auth.users u
+WHERE NOT EXISTS (SELECT 1 FROM public.users WHERE users.id = u.id)
+  AND NOT EXISTS (SELECT 1 FROM public.users WHERE users.email = u.email);
+
+-- ============================================================
+-- SECTION 31: APP-LEVEL SETTINGS (key/value)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS app_settings (
+  key   VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+INSERT INTO app_settings (key, value) VALUES
+  ('business_name', 'KAH Laban (PVT) Ltd'),
+  ('currency', 'LKR'),
+  ('timezone', 'Asia/Colombo')
+ON CONFLICT (key) DO NOTHING;
 ON CONFLICT (id) DO NOTHING;

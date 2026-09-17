@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X } from 'lucide-react'
 import { usePosProducts } from '../../hooks/useProducts'
 import { salesService, createPosSale } from '../../services/salesService'
 import { useAuth } from '../../context/AuthContext'
 import { customerService } from '../../services/customerService'
+import { supabase } from '../../services/supabase'
 import Modal from '../../components/shared/Modal'
 import Button from '../../components/shared/Button'
 import Loader from '../../components/shared/Loader'
 import { formatCurrency } from '../../utils/formatters'
 
 const PAYMENT_LABELS = { cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer', online: 'Online' }
-const BUSINESS_NAME = import.meta.env.VITE_BUSINESS_NAME || 'Sweet Restaurant'
 const PRODUCT_IMAGE_FALLBACK = "data:image/svg+xml;utf8," + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#f3f4f6"/><text x="40" y="48" font-size="30" text-anchor="middle">🍰</text></svg>`
 )
@@ -22,8 +22,16 @@ const qtyBtn = {
 }
 
 const Pos = () => {
-  const { user, profile } = useAuth()
+    const { user, profile } = useAuth()
   const { products, loading, refetch } = usePosProducts()
+
+  const [businessName, setBusinessName] = useState(import.meta.env.VITE_BUSINESS_NAME || 'KAH Laban (PVT) Ltd')
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'business_name').maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data?.value) setBusinessName(data.value)
+      })
+  }, [])
 
   const [search,        setSearch]        = useState('')
   const [cart,          setCart]          = useState([])   // { product, quantity }
@@ -131,9 +139,9 @@ const Pos = () => {
             }))
         ),
       })
-      setCart([])
+            setCart([])
       setDiscount(0)
-      setCustomerId(null)
+      setCustomerPhone('')
       refetch()
     } catch (err) {
       // Sale NOT saved — show the real error, keep the cart intact
@@ -333,7 +341,7 @@ const Pos = () => {
           <div>
             <div id="pos-receipt" className="thermal-receipt">
               <div style={{ textAlign: 'center' }}>
-                <div className="tr-shop">{BUSINESS_NAME}</div>
+                                <div className="tr-shop">{businessName}</div>
                 <div className="tr-muted">— Sale Receipt —</div>
               </div>
               <div className="tr-divider" />

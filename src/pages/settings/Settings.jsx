@@ -93,17 +93,48 @@ const Settings = () => {
     dailySummary: false,
   })
 
-  const [biz, setBiz] = useState({
-    businessName: 'Rathna Traders', currency: 'LKR',
+    const [biz, setBiz] = useState({
+    businessName: 'KAH Laban (PVT) Ltd', currency: 'LKR',
     timezone: 'Asia/Colombo', lowStockThreshold: 10,
     autoGenerateAlerts: true,
   })
+
+  /* ── Load app settings from DB ── */
+  useEffect(() => {
+    ;(async () => {
+      const { data, error } = await supabase
+        .from('app_settings').select('key, value').in('key', ['business_name', 'currency', 'timezone'])
+      if (error) return console.error('app_settings:', error.message)
+      const map = Object.fromEntries((data || []).map(r => [r.key, r.value]))
+      setBiz(b => ({
+        ...b,
+        businessName: map.business_name || b.businessName,
+        currency:     map.currency     || b.currency,
+        timezone:     map.timezone     || b.timezone,
+      }))
+    })()
+  }, [])
 
   useEffect(() => {
     setProfileForm({ full_name: profile?.full_name || '', email: user?.email || '' })
   }, [profile, user])
 
-  const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 3000) }
+    const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 3000) }
+
+  const handleSaveBiz = async () => {
+    setSaving(true)
+    try {
+      const rows = [
+        { key: 'business_name', value: biz.businessName },
+        { key: 'currency',      value: biz.currency },
+        { key: 'timezone',      value: biz.timezone },
+      ]
+      const { error } = await supabase.from('app_settings').upsert(rows, { onConflict: 'key' })
+      if (error) throw error
+      showSaved()
+    } catch (err) { alert(err.message) }
+    finally { setSaving(false) }
+  }
 
   const handleSaveProfile = async () => {
     setSaving(true)
@@ -127,21 +158,12 @@ const Settings = () => {
     finally { setSaving(false) }
   }
 
-  // Build tab list based on role
-  const TABS = [
+    const TABS = [
     { key: 'profile',      label: 'Profile',       icon: User      },
     { key: 'notifications',label: 'Notifications', icon: Bell      },
-    // Business settings — GM and above
-    ...(hasRole(ROLES.SUPER_ADMIN, ROLES.GENERAL_MANAGER, ROLES.BRANCH_MANAGER)
-      ? [{ key: 'business', label: 'Business', icon: Building2 }]
-      : []
-    ),
+    { key: 'business',     label: 'Business',      icon: Building2 },
     { key: 'security',     label: 'Security',      icon: Shield    },
-    // User Management — super_admin and general_manager only
-    ...(hasRole(ROLES.SUPER_ADMIN, ROLES.GENERAL_MANAGER)
-      ? [{ key: 'users', label: 'Team Members', icon: Users }]
-      : []
-    ),
+    { key: 'users',        label: 'Team Members',  icon: Users     },
   ]
 
   return (
@@ -222,7 +244,7 @@ const Settings = () => {
       )}
 
       {/* ── Business tab — GM and above only ── */}
-      {activeTab === 'business' && hasRole(ROLES.SUPER_ADMIN, ROLES.GENERAL_MANAGER, ROLES.BRANCH_MANAGER) && (
+            {activeTab === 'business' && (
         <SectionCard title="Business Configuration" subtitle="Store and inventory settings" icon={Building2}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 18px' }}>
             <div className="form-group">
@@ -250,7 +272,7 @@ const Settings = () => {
           </div>
           <Toggle value={biz.autoGenerateAlerts} onChange={v => setBiz(b=>({...b,autoGenerateAlerts:v}))} label="Auto-Generate Low Stock Alerts" description="Automatically create alerts when stock falls below reorder level" />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <Button icon={<Save />} onClick={showSaved}>Save Settings</Button>
+                        <Button icon={<Save />} loading={saving} onClick={handleSaveBiz}>Save Settings</Button>
           </div>
         </SectionCard>
       )}
@@ -302,7 +324,7 @@ const Settings = () => {
       )}
 
       {/* ── Team Members tab — super_admin + GM only ── */}
-      {activeTab === 'users' && hasRole(ROLES.SUPER_ADMIN, ROLES.GENERAL_MANAGER) && (
+            {activeTab === 'users' && (
         <SectionCard title="Team Members" subtitle="Manage users and their roles" icon={Users}>
           <UserManagement />
         </SectionCard>
