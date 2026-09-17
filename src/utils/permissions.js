@@ -1,196 +1,75 @@
-// =============================================
-// HardwareAI — Role-Based Access Control
-// 9-tier role hierarchy
-// =============================================
-
-// ── All permission keys ────────────────────────────────────────────────────────
+// ── Permission keys ───────────────────────────────────────────────────────────
 export const P = {
-  // Dashboard
+  // Dashboard & analytics
   VIEW_DASHBOARD:      'view:dashboard',
-
-  // Analytics & reporting
   VIEW_ANALYTICS:      'view:analytics',
-  VIEW_PROFITS:        'view:profits',
-  VIEW_MARGINS:        'view:margins',
   EXPORT_REPORTS:      'export:reports',
 
-  // Inventory
+  // Raw material inventory
   VIEW_INVENTORY:      'view:inventory',
   MANAGE_INVENTORY:    'manage:inventory',
-  MANAGE_STOCK:        'manage:stock',
-  TRANSFER_STOCK:      'transfer:stock',
-  DELETE_PRODUCTS:     'delete:products',
 
-  // Sales
+  // Products & recipes
+  VIEW_PRODUCTS:       'view:products',
+  MANAGE_PRODUCTS:     'manage:products',
+
+  // Sales / POS
   VIEW_SALES:          'view:sales',
   CREATE_SALES:        'create:sales',
-  MANAGE_SALES:        'manage:sales',
-  CREATE_QUOTATIONS:   'create:quotations',
 
   // Customers
   VIEW_CUSTOMERS:      'view:customers',
   MANAGE_CUSTOMERS:    'manage:customers',
-  MANAGE_CREDITS:      'manage:credits',
-  VIEW_CREDITS:        'view:credits',
 
-  // Returns
-  VIEW_RETURNS:        'view:returns',
-  MANAGE_RETURNS:      'manage:returns',
-  APPROVE_RETURNS:     'approve:returns',
-
-  // Finance
-  VIEW_FINANCIAL:      'view:financial',
-  MANAGE_PAYMENTS:     'manage:payments',
+  // Expenses
+  VIEW_EXPENSES:       'view:expenses',
+  MANAGE_EXPENSES:     'manage:expenses',
 
   // Users & settings
   MANAGE_USERS:        'manage:users',
-  MANAGE_ROLES:        'manage:roles',
   MANAGE_SETTINGS:     'manage:settings',
-  MANAGE_PRICING:      'manage:pricing',
-
-  // Alerts
-  VIEW_ALERTS:         'view:alerts',
-
-  // Delete
-  DELETE_RECORDS:      'delete:records',
 }
 
-// ── Role identifiers ──────────────────────────────────────────────────────────
+// ── Roles ─────────────────────────────────────────────────────────────────────
 export const ROLES = {
-  SUPER_ADMIN:          'super_admin',
-  GENERAL_MANAGER:      'general_manager',
-  BRANCH_MANAGER:       'branch_manager',
-  INVENTORY_MANAGER:    'inventory_manager',
-  SALES_REP:            'sales_rep',
-  ACCOUNTANT:           'accountant',
-  DELIVERY_COORDINATOR: 'delivery_coordinator',
-  DRIVER:               'driver',
-  PROCUREMENT_OFFICER:  'procurement_officer',
+  ADMIN:   'admin',
+  MANAGER: 'manager',
+  CASHIER: 'cashier',
 }
 
-// ── Human-readable role labels ─────────────────────────────────────────────────
 export const ROLE_LABELS = {
-  super_admin:          'Super Admin / Owner',
-  general_manager:      'General Manager',
-  branch_manager:       'Branch Manager',
-  inventory_manager:    'Inventory Manager',
-  sales_rep:            'Sales Representative',
-  accountant:           'Accountant',
-  delivery_coordinator: 'Delivery Coordinator',
-  driver:               'Driver',
-  procurement_officer:  'Procurement Officer',
-}
-
-// ── Role badge colours ────────────────────────────────────────────────────────
-export const ROLE_COLORS = {
-  super_admin:          { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-  general_manager:      { bg: '#fff7ed', color: '#f97316', border: '#fed7aa' },
-  branch_manager:       { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  inventory_manager:    { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  sales_rep:            { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
-  accountant:           { bg: '#fdf4ff', color: '#9333ea', border: '#e9d5ff' },
-  delivery_coordinator: { bg: '#ecfeff', color: '#0891b2', border: '#a5f3fc' },
-  driver:               { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
-  procurement_officer:  { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' },
+  [ROLES.ADMIN]:   'Admin',
+  [ROLES.MANAGER]: 'Manager',
+  [ROLES.CASHIER]: 'Cashier',
 }
 
 // ── Permission map — what each role can do ─────────────────────────────────────
-// '*' means all permissions (super_admin only)
 const ALL = Object.values(P)
 
 export const ROLE_PERMISSIONS = {
-  // 1. Super Admin — unrestricted
-  [ROLES.SUPER_ADMIN]: ALL,
+  // Admin — full access
+  [ROLES.ADMIN]: ALL,
 
-  // 2. General Manager
-  [ROLES.GENERAL_MANAGER]: [
-    P.VIEW_DASHBOARD, P.VIEW_ANALYTICS, P.VIEW_PROFITS, P.VIEW_MARGINS,
-    P.EXPORT_REPORTS,
-    P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
-    P.VIEW_SALES, P.CREATE_SALES, P.MANAGE_SALES, P.CREATE_QUOTATIONS,
-    P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS, P.MANAGE_CREDITS, P.VIEW_CREDITS,
-    P.VIEW_RETURNS, P.MANAGE_RETURNS, P.APPROVE_RETURNS,
-    P.VIEW_FINANCIAL, P.MANAGE_PAYMENTS,
-    P.MANAGE_USERS,
-    P.VIEW_ALERTS,
+  // Manager — everything except user management
+  [ROLES.MANAGER]: [
+    P.VIEW_DASHBOARD, P.VIEW_ANALYTICS, P.EXPORT_REPORTS,
+    P.VIEW_INVENTORY, P.MANAGE_INVENTORY,
+    P.VIEW_PRODUCTS, P.MANAGE_PRODUCTS,
+    P.VIEW_SALES, P.CREATE_SALES,
+    P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS,
+    P.VIEW_EXPENSES, P.MANAGE_EXPENSES,
+    P.MANAGE_SETTINGS,
   ],
 
-  // 3. Branch Manager
-  [ROLES.BRANCH_MANAGER]: [
-    P.VIEW_DASHBOARD, P.VIEW_ANALYTICS,
-    P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
-    P.VIEW_SALES, P.CREATE_SALES, P.MANAGE_SALES, P.CREATE_QUOTATIONS,
-    P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS, P.MANAGE_CREDITS, P.VIEW_CREDITS,
-    P.VIEW_RETURNS, P.MANAGE_RETURNS, P.APPROVE_RETURNS,
-    P.VIEW_ALERTS,
-  ],
-
-  // 4. Inventory Manager / Storekeeper (warehouse staff)
-  [ROLES.INVENTORY_MANAGER]: [
+  // Cashier — POS sales + customers
+  [ROLES.CASHIER]: [
     P.VIEW_DASHBOARD,
-    P.VIEW_INVENTORY, P.MANAGE_INVENTORY, P.MANAGE_STOCK, P.TRANSFER_STOCK,
-    P.VIEW_ALERTS,
+    P.VIEW_PRODUCTS,
+    P.VIEW_SALES, P.CREATE_SALES,
+    P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS,
   ],
-
-  // 5. Sales Representative / Cashier
-  [ROLES.SALES_REP]: [
-    P.VIEW_DASHBOARD,
-    P.VIEW_INVENTORY,      // read-only stock lookup
-    P.VIEW_SALES, P.CREATE_SALES, P.CREATE_QUOTATIONS,
-    P.VIEW_CUSTOMERS,
-    P.VIEW_ALERTS,
-  ],
-
-  // 6. Accountant / Finance Officer
-  [ROLES.ACCOUNTANT]: [
-    P.VIEW_DASHBOARD,
-    P.VIEW_SALES,
-    P.VIEW_CUSTOMERS, P.VIEW_CREDITS, P.MANAGE_CREDITS, P.MANAGE_PAYMENTS,
-    P.VIEW_FINANCIAL,
-    P.VIEW_RETURNS,
-    P.EXPORT_REPORTS,
-    P.VIEW_ALERTS,
-  ],
-
-  // 7. Delivery Coordinator
-  [ROLES.DELIVERY_COORDINATOR]: [
-    P.VIEW_DASHBOARD,
-    P.VIEW_CUSTOMERS,
-    P.VIEW_ALERTS,
-  ],
-
-  // 8. Driver — minimal access
-  [ROLES.DRIVER]: [
-    P.VIEW_DASHBOARD,
-  ],
-
-  // 9. Procurement Officer
-  [ROLES.PROCUREMENT_OFFICER]: [
-    P.VIEW_DASHBOARD,
-    P.VIEW_INVENTORY,
-    P.VIEW_ALERTS,
-  ],
-}
-
-// ── Nav item permission requirements ──────────────────────────────────────────
-// Each route maps to the minimum permission needed to see it in the sidebar
-export const NAV_PERMISSIONS = {
-  '/':                        P.VIEW_DASHBOARD,
-  '/inventory':               P.VIEW_INVENTORY,
-  '/customers':               P.VIEW_CUSTOMERS,
-  '/sales':                   P.VIEW_SALES,
-  '/returns':                 P.VIEW_RETURNS,
-  '/analytics':               P.VIEW_ANALYTICS,
-  '/alerts':                  P.VIEW_ALERTS,
-  '/settings':                P.VIEW_DASHBOARD,
 }
 
 // ── Helper: resolve permissions for a role string ──────────────────────────────
 export const getPermissionsForRole = (role) =>
   ROLE_PERMISSIONS[role] || []
-
-// ── Helper: check a single permission ─────────────────────────────────────────
-export const roleHasPermission = (role, permission) => {
-  const perms = getPermissionsForRole(role)
-  return perms.includes(permission)
-}

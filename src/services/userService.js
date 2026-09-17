@@ -1,92 +1,54 @@
 import { supabase } from './supabase'
 
 export const userService = {
-  // Get all users (admin only)
   getAll: async () => {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, full_name, email, role, is_active, created_at')
       .order('created_at', { ascending: false })
     if (error) throw error
     return data
   },
 
-  // Get single user
-  getById: async (id) => {
+  create: async ({ fullName, email, password, role = 'cashier' }) => {
+    // Invite via Supabase Auth admin API, then the DB row is created by trigger
+    // or insert here depending on your setup. Fallback: insert profile row.
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .insert([{ full_name: fullName, email, role, password_hash: 'invited' }])
+      .select('id, full_name, email, role, is_active, created_at')
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  update: async (id, updates) => {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .select('id, full_name, email, role, is_active, created_at')
       .single()
     if (error) throw error
     return data
   },
 
-  // Update a user's role (super_admin only)
-  updateRole: async (userId, role) => {
+  setActive: async (id, isActive) => {
     const { data, error } = await supabase
       .from('users')
-      .update({ role })
-      .eq('id', userId)
-      .select()
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, full_name, email, role, is_active')
       .single()
     if (error) throw error
     return data
-  },
-
-  // Update user profile
-  update: async (userId, updates) => {
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  // Deactivate / reactivate user (store status in users table)
-  setStatus: async (userId, status) => {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ status })
-      .eq('id', userId)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  // Invite a new user — creates Supabase Auth user + registers in users table
-  // Note: requires service_role key on backend; in client-side apps, use
-  // Supabase "Invite User" from the dashboard or a serverless function.
-  // This creates a profile entry assuming Auth user already exists.
-  createProfile: async ({ id, fullName, email, role }) => {
-    const { data, error } = await supabase
-      .from('users')
-      .insert([{ id, full_name: fullName, email, role, status: 'active' }])
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  // Get user count by role (for dashboard stats)
-  getRoleSummary: async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role, status')
-    if (error) throw error
-
-    const summary = {}
-    for (const u of data || []) {
-      if (!summary[u.role]) summary[u.role] = { total: 0, active: 0 }
-      summary[u.role].total  += 1
-      if (u.status !== 'inactive') summary[u.role].active += 1
-    }
-    return summary
   },
 }
+
+export const ROLES = [
+  { value: 'admin',   label: 'Admin',   description: 'Full access to everything' },
+  { value: 'manager', label: 'Manager', description: 'Manage inventory, products, sales and reports' },
+  { value: 'cashier', label: 'Cashier', description: 'POS sales and customers only' },
+]
 
 export default userService

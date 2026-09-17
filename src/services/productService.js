@@ -1,44 +1,80 @@
 import { supabase } from './supabase'
 
+// ── Product categories (sweets categories) ────────────────────────────────────
+export const categoryService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('product_categories')
+      .select('*')
+      .order('name')
+    if (error) throw error
+    return data
+  },
+
+  create: async (category) => {
+    const { data, error } = await supabase
+      .from('product_categories')
+      .insert([category])
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  update: async (id, updates) => {
+    const { data, error } = await supabase
+      .from('product_categories')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  delete: async (id) => {
+    const { error } = await supabase.from('product_categories').delete().eq('id', id)
+    if (error) throw error
+  },
+}
+
+// ── Products (sellable sweets) ────────────────────────────────────────────────
 export const productService = {
-  // Get all products with category and supplier
-  getAll: async ({ search = '', category_id = null, status = null, from = null, to = null, dateField = 'created_at' } = {}) => {
+  // POS list — uses pos_products_view (includes available_stock + in_stock)
+  getPosProducts: async () => {
+    const { data, error } = await supabase
+      .from('pos_products_view')
+      .select('*')
+      .order('name')
+    if (error) throw error
+    return data
+  },
+
+  getAll: async ({ search = '', category_id = null, activeOnly = true } = {}) => {
     let query = supabase
       .from('products')
-      .select(`
-        *,
-        categories ( id, name ),
-        suppliers ( id, supplier_name )
-      `)
-      .order('created_at', { ascending: false })
+      .select('*, product_categories ( id, name )')
+      .order('name')
 
-    if (search) {
-      query = query.or(`product_name.ilike.%${search}%,product_code.ilike.%${search}%`)
-    }
+    if (activeOnly) query = query.eq('is_active', true)
     if (category_id) query = query.eq('category_id', category_id)
-    if (status) query = query.eq('status', status)
-    if (from && dateField === 'created_at') query = query.gte('created_at', from)
-    if (to && dateField === 'created_at')   query = query.lte('created_at', to)
-    if (from && dateField === 'last_restocked') query = query.gte('last_restocked', from)
-    if (to && dateField === 'last_restocked')   query = query.lte('last_restocked', to)
+    if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`)
 
     const { data, error } = await query
     if (error) throw error
     return data
   },
 
-  // Get single product
   getById: async (id) => {
     const { data, error } = await supabase
       .from('products')
-      .select(`*, categories ( id, name ), suppliers ( id, supplier_name )`)
+      .select('*, product_categories ( id, name ), product_recipes ( *, inventory_items ( id, name, unit, cost_per_unit ) )')
       .eq('id', id)
       .single()
     if (error) throw error
     return data
   },
 
-  // Create product
   create: async (product) => {
     const { data, error } = await supabase
       .from('products')
@@ -49,7 +85,6 @@ export const productService = {
     return data
   },
 
-  // Update product
   update: async (id, updates) => {
     const { data, error } = await supabase
       .from('products')
@@ -61,136 +96,56 @@ export const productService = {
     return data
   },
 
-  // Delete (soft delete by setting status to inactive)
-  delete: async (id) => {
-    const { error } = await supabase
+  // Soft-delete / toggle active
+  setActive: async (id, isActive) => {
+    const { data, error } = await supabase
       .from('products')
-      .update({ status: 'inactive' })
+      .update({ is_active: isActive })
       .eq('id', id)
-    if (error) throw error
-  },
-
-  // Get low stock products
-  getLowStock: async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`*, categories ( name ), suppliers ( supplier_name )`)
-      .lte('quantity', supabase.raw('reorder_level'))
-      .eq('status', 'active')
-      .order('quantity', { ascending: true })
-    if (error) throw error
-    return data
-  },
-
-  // Get products below reorder level using RPC or manual filter
-  getBelowReorder: async () => {
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      categories ( name ),
-      suppliers ( id, supplier_name, phone )
-    `)
-    .eq('status', 'active')
-
-  if (error) throw error
-
-  return (data || []).filter(p => p.quantity <= p.reorder_level)
-  },
-
-  // Get dead stock (never sold)
-  getDeadStock: async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        categories ( name ),
-        sale_items ( id )
-      `)
-      .eq('status', 'active')
-    if (error) throw error
-    return (data || []).filter(p => !p.sale_items || p.sale_items.length === 0)
-  },
-
-  // Adjust stock
-  adjustStock: async (productId, quantity, type, notes = '') => {
-    const product = await productService.getById(productId)
-    const previousStock = product.quantity
-    const newStock = Math.max(0, previousStock + quantity)
-
-    const { error: txError } = await supabase
-      .from('inventory_transactions')
-      .insert([{
-        product_id: productId,
-        transaction_type: type,
-        quantity,
-        previous_stock: previousStock,
-        new_stock: newStock,
-        notes,
-      }])
-    if (txError) throw txError
-
-    const { data, error } = await supabase
-      .from('products')
-      .update({ quantity: newStock })
-      .eq('id', productId)
       .select()
       .single()
     if (error) throw error
     return data
   },
 
-  // Get all categories
-  getCategories: async () => {
+  // ── Recipes ────────────────────────────────────────────────────────────────
+  getRecipe: async (productId) => {
     const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name')
-    if (error) throw error
-    return data
-  },
-
-  // Create category
-  createCategory: async (name, description = '') => {
-    const { data, error } = await supabase
-      .from('categories')
-      .insert([{ name, description }])
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  // Get inventory transactions for a product
-  getTransactions: async (productId) => {
-    const { data, error } = await supabase
-      .from('inventory_transactions')
-      .select('*')
+      .from('product_recipes')
+      .select('*, inventory_items ( id, name, unit, cost_per_unit )')
       .eq('product_id', productId)
-      .order('created_at', { ascending: false })
-      .limit(50)
     if (error) throw error
     return data
   },
 
-  // Dashboard summary
-  getSummary: async () => {
+  // Replace the whole recipe for a product (DB trigger recalculates cost)
+  setRecipe: async (productId, items) => {
+    await supabase.from('product_recipes').delete().eq('product_id', productId)
+    if (!items || items.length === 0) return []
     const { data, error } = await supabase
-      .from('products')
-      .select('quantity, buying_price, selling_price, reorder_level, status')
+      .from('product_recipes')
+      .insert(items.map(i => ({
+        product_id:        productId,
+        inventory_item_id: i.inventory_item_id,
+        quantity_required: parseFloat(i.quantity_required),
+      })))
+      .select()
     if (error) throw error
+    return data
+  },
 
-    const active = (data || []).filter(p => p.status === 'active')
-    const totalValue = active.reduce((s, p) => s + p.quantity * p.buying_price, 0)
-    const lowStock = active.filter(p => p.quantity <= p.reorder_level).length
-    const outOfStock = active.filter(p => p.quantity === 0).length
+  // Product cost + estimated profit from the DB view
+  getCosts: async () => {
+    const { data, error } = await supabase.from('product_cost_view').select('*')
+    if (error) throw error
+    return data
+  },
 
-    return {
-      totalProducts: active.length,
-      totalStockValue: totalValue,
-      lowStockCount: lowStock,
-      outOfStockCount: outOfStock,
-    }
+  // Available stock (how many can be produced) from the DB view
+  getStockView: async () => {
+    const { data, error } = await supabase.from('product_stock_view').select('*')
+    if (error) throw error
+    return data
   },
 }
 

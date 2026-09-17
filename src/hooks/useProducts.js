@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { productService } from '../services/productService'
+import { productService, categoryService } from '../services/productService'
 
 export const useProducts = (filters = {}) => {
   const [products, setProducts] = useState([])
@@ -24,18 +24,25 @@ export const useProducts = (filters = {}) => {
   return { products, loading, error, refetch: fetch }
 }
 
-export const useProductSummary = () => {
-  const [summary, setSummary] = useState(null)
+// POS products (with available stock + in_stock from the DB view)
+export const usePosProducts = () => {
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    productService.getSummary()
-      .then(setSummary)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+  const fetch = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await productService.getPosProducts()
+      setProducts(data || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  return { summary, loading }
+  useEffect(() => { fetch() }, [fetch])
+  return { products, loading, refetch: fetch }
 }
 
 export const useCategories = () => {
@@ -43,7 +50,7 @@ export const useCategories = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    productService.getCategories()
+    categoryService.getAll()
       .then(setCategories)
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -51,3 +58,4 @@ export const useCategories = () => {
 
   return { categories, loading }
 }
+

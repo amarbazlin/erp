@@ -14,15 +14,9 @@ const RBACContext = createContext({
 
 // Role hierarchy — higher index = higher authority
 const ROLE_HIERARCHY = [
-  ROLES.DRIVER,
-  ROLES.SALES_REP,
-  ROLES.DELIVERY_COORDINATOR,
-  ROLES.PROCUREMENT_OFFICER,
-  ROLES.INVENTORY_MANAGER,
-  ROLES.ACCOUNTANT,
-  ROLES.BRANCH_MANAGER,
-  ROLES.GENERAL_MANAGER,
-  ROLES.SUPER_ADMIN,
+  ROLES.CASHIER,
+  ROLES.MANAGER,
+  ROLES.ADMIN,
 ]
 
 export const RBACProvider = ({ children }) => {
