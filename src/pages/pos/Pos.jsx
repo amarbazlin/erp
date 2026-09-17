@@ -145,7 +145,7 @@ const Pos = () => {
 
       {/* ── Cart sidebar ── */}
       <div style={{ width: 340, display: 'flex', flexDirection: 'column', border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)' }}>
-        {/* Cart items */}\<div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        {/* Cart items */}<div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, margin: '0 0 12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Order ({cart.reduce((s, c) => s + c.quantity, 0)} items)
           </h3>
@@ -178,7 +178,7 @@ const Pos = () => {
           )}
         </div>
 
-        {/* Totals + checkout */}\<div style={{ padding: 16, borderTop: '1px solid var(--card-border)' }}>
+        {/* Totals + checkout */}<div style={{ padding: 16, borderTop: '1px solid var(--card-border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Subtotal</span>
             <span style={{ fontSize: 14, fontWeight: 700 }}>{formatCurrency(subtotal)}</span>
@@ -213,7 +213,7 @@ const Pos = () => {
         </div>
       </div>
 
-      {/* Receipt modal */}\<Modal open={!!receipt} onClose={() => setReceipt(null)} title="Sale Complete!" size="sm">
+      {/* Receipt modal */}<Modal open={!!receipt} onClose={() => setReceipt(null)} title="Sale Complete!" size="sm">
         {receipt && (
           <div>
             <p style={{ fontSize: 13.5, marginBottom: 12 }}>

@@ -4,6 +4,20 @@ export const calcMargin = (buyingPrice, sellingPrice) => {
   return ((sellingPrice - buyingPrice) / buyingPrice) * 100
 }
 
+// Recipe cost — mirrors the database view `product_cost_view` / function
+// `calculate_product_cost()`:
+//     cost = Σ (quantity_required × cost_per_unit / 1000)
+// The DB stores raw-material cost per KG/L/UNIT and always divides by 1000.
+// Used only for the live preview while editing a product; the saved value
+// always comes back from the database.
+export const calcRecipeCost = (recipeItems = [], materialsById = {}) =>
+  recipeItems.reduce((sum, r) => {
+    const material = materialsById[r.inventory_item_id]
+    const qty = parseFloat(r.quantity_required) || 0
+    const costPerUnit = parseFloat(material?.cost_per_unit) || 0
+    return sum + qty * (costPerUnit / 1000)
+  }, 0)
+
 // Stock value
 export const calcStockValue = (quantity, price) => {
   return (quantity || 0) * (price || 0)

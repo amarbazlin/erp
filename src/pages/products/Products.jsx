@@ -72,7 +72,7 @@ const Products = () => {
         </Button>
       </div>
 
-      {/* Filters */}\<div className="card" style={{ padding: '12px 18px', marginBottom: 16 }}>
+      {/* Filters */}<div className="card" style={{ padding: '12px 18px', marginBottom: 16 }}>
         <SearchBar value={search} onChange={setSearch} placeholder="Search products or SKUs…" width={260} />
         <select className="input-base" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} style={{ width: 170 }}>
           <option value="">All Categories</option>
@@ -82,7 +82,7 @@ const Products = () => {
         </select>
       </div>
 
-      {/* Table */}\<div className="card">
+      {/* Table */}<div className="card">
         <div className="table-scroll-wrapper">
           <table className="data-table">
             <thead>
@@ -106,7 +106,9 @@ const Products = () => {
                   const c = costs[p.id]
                   const cost = c?.calculated_cost || 0
                   const price = parseFloat(p.selling_price) || 0
-                  const margin = cost > 0 ? ((price - cost) / cost) * 100 : 0
+                  // Profit margin = profit ÷ selling price (matches the Inventory
+                  // finished-products panel; the DB view supplies the cost).
+                  const margin = price > 0 ? ((price - cost) / price) * 100 : 0
                   return (
                     <tr key={p.id}>
                       <td>
@@ -135,7 +137,7 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Delete modal */}\<Modal
+      {/* Delete modal */}<Modal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Deactivate Product"

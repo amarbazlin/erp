@@ -10,6 +10,16 @@ export const inventoryCategoryService = {
     if (error) throw error
     return data
   },
+
+  create: async ({ name, description = null }) => {
+    const { data, error } = await supabase
+      .from('inventory_categories')
+      .insert([{ name: name.trim(), description }])
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
 }
 
 // ── Raw materials (inventory_items) — quantities in g/ml/units ────────────────
@@ -57,7 +67,47 @@ export const inventoryService = {
       .select()
       .single()
     if (error) throw error
+
+    // A cost change changes every product that uses this material, so the
+    // cached products.calculated_cost has to be brought back in sync.
+    if (updates.cost_per_unit !== undefined) {
+      await inventoryService.syncProductCosts(data.id)
+    }
     return data
+  },
+
+  // Bring the cached product cost back in sync after a raw-material cost change.
+  // Always uses the database's own calculation (the `refresh_product_costs`
+  // function/trigger added in the setup SQL, otherwise the values exposed by
+  // `product_cost_view`) — never a client-side copy of the recipe formula.
+  syncProductCosts: async (inventoryItemId) => {
+    // Preferred path: DB function / trigger refreshes every product at once.
+    const { error } = await supabase.rpc('refresh_product_costs')
+    if (!error) return
+
+    // Fallback for databases predating the trigger: copy the cost the database
+    // view calculated back into the cached column for the affected products.
+    const { data: recipeRows, error: recipeErr } = await supabase
+      .from('product_recipes')
+      .select('product_id')
+      .eq('inventory_item_id', inventoryItemId)
+    if (recipeErr) return
+
+    const productIds = [...new Set((recipeRows || []).map(r => r.product_id))]
+    if (productIds.length === 0) return
+
+    const { data: costs, error: costErr } = await supabase
+      .from('product_cost_view')
+      .select('product_id, calculated_cost')
+      .in('product_id', productIds)
+    if (costErr) return
+
+    for (const row of costs || []) {
+      await supabase
+        .from('products')
+        .update({ calculated_cost: row.calculated_cost, updated_at: new Date().toISOString() })
+        .eq('id', row.product_id)
+    }
   },
 
   setActive: async (id, isActive) => {

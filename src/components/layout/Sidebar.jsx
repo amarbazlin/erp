@@ -17,7 +17,7 @@ const NAV = [
   { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null                },
   { path: '/pos',        label: 'POS / Sales', icon: 'ShoppingCart',                  permission: P.VIEW_SALES        },
   { path: '/products',   label: 'Products',   icon: 'Cake',                          permission: P.VIEW_PRODUCTS     },
-  { path: '/inventory',  label: 'Materials',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
+  { path: '/inventory',  label: 'Inventory',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
   { path: '/customers',  label: 'Customers',  icon: 'Users2',                        permission: P.VIEW_CUSTOMERS    },
   { path: '/analytics',  label: 'Analytics',  icon: 'BarChart3',                     permission: P.VIEW_ANALYTICS    },
 ]

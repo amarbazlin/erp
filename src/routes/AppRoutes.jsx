@@ -14,7 +14,7 @@ import Pos            from '../pages/pos/Pos'
 import Products       from '../pages/products/Products'
 import AddProduct     from '../pages/products/AddProduct'
 import EditProduct    from '../pages/products/EditProduct'
-import Materials      from '../pages/inventory/Materials'
+import Inventory      from '../pages/inventory/Inventory'
 import Customers      from '../pages/customers/Customers'
 import CustomerDetail from '../pages/customers/CustomerDetail'
 import Analytics      from '../pages/analytics/Analytics'
@@ -48,9 +48,9 @@ const AppRoutes = () => (
           <Route path="/products/edit/:id" element={<EditProduct />} />
         </Route>
 
-        {/* ── Raw material inventory ── */}
+        {/* ── Inventory: raw materials + finished products ── */}
         <Route element={<RoleGuard permission={P.VIEW_INVENTORY} />}>
-          <Route path="/inventory" element={<Materials />} />
+          <Route path="/inventory" element={<Inventory />} />
         </Route>
 
         {/* ── Customers ── */}

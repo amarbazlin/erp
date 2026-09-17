@@ -1,4 +1,8 @@
 import { supabase } from './supabase'
+import { compressImage, validateImageFile } from '../utils/imageUtils'
+
+// Bucket used for finished-product images (created by the DB setup script).
+const PRODUCT_IMAGE_BUCKET = 'product-images'
 
 // ── Product categories (sweets categories) ────────────────────────────────────
 export const categoryService = {
@@ -108,6 +112,37 @@ export const productService = {
     return data
   },
 
+  // ── Product image upload ───────────────────────────────────────────────────
+  // Compresses the image, uploads it to Supabase Storage and returns a public
+  // URL. If the storage bucket is unavailable the compressed image is returned
+  // as a data URL so the product can still be saved (with a warning).
+  uploadProductImage: async (file) => {
+    const invalid = validateImageFile(file)
+    if (invalid) throw new Error(invalid)
+
+    const { blob, dataUrl } = await compressImage(file)
+    const objectPath = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
+
+    try {
+      const { error } = await supabase
+        .storage
+        .from(PRODUCT_IMAGE_BUCKET)
+        .upload(objectPath, blob, { contentType: 'image/jpeg', upsert: true, cacheControl: '3600' })
+      if (error) throw error
+
+      const { data } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(objectPath)
+      return { url: data.publicUrl, stored: true, warning: null }
+    } catch (err) {
+      // Storage bucket not configured (or RLS blocked it) — fall back to an
+      // inline data URL so the admin's upload is not lost.
+      return {
+        url: dataUrl,
+        stored: false,
+        warning: 'Image saved inline (storage bucket unavailable). Run the storage section of NEW_SQL_QUERY.SQL to enable image hosting.',
+      }
+    }
+  },
+
   // ── Recipes ────────────────────────────────────────────────────────────────
   getRecipe: async (productId) => {
     const { data, error } = await supabase
@@ -146,6 +181,47 @@ export const productService = {
     const { data, error } = await supabase.from('product_stock_view').select('*')
     if (error) throw error
     return data
+  },
+
+  // Products merged with the DB cost + available-stock views.
+  // This is the single source of truth for the inventory/products screens —
+  // cost, profit and available stock always come from the database, never from
+  // client-side duplication of the recipe maths.
+  getPerformance: async ({ search = '', category_id = null, activeOnly = false } = {}) => {
+    let query = supabase
+      .from('products')
+      .select('*, product_categories ( id, name )')
+      .order('name')
+
+    if (activeOnly) query = query.eq('is_active', true)
+    if (category_id) query = query.eq('category_id', category_id)
+    if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`)
+
+    const [productsRes, costsRes, stockRes] = await Promise.all([
+      query,
+      supabase.from('product_cost_view').select('*'),
+      supabase.from('product_stock_view').select('*'),
+    ])
+
+    if (productsRes.error) throw productsRes.error
+    if (costsRes.error) throw costsRes.error
+    if (stockRes.error) throw stockRes.error
+
+    const costs = Object.fromEntries((costsRes.data || []).map(r => [r.product_id, r]))
+    const stock = Object.fromEntries((stockRes.data || []).map(r => [r.product_id, r]))
+
+    return (productsRes.data || []).map(p => {
+      const cost = parseFloat(costs[p.id]?.calculated_cost) || 0
+      const price = parseFloat(p.selling_price) || 0
+      const profit = parseFloat(costs[p.id]?.estimated_profit ?? (price - cost)) || 0
+      return {
+        ...p,
+        recipe_cost: cost,
+        estimated_profit: profit,
+        profit_margin: price > 0 ? (profit / price) * 100 : 0,
+        available_stock: parseInt(stock[p.id]?.available_stock) || 0,
+      }
+    })
   },
 }
 
