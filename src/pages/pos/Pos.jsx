@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X } from 'lucide-react'
 import { usePosProducts } from '../../hooks/useProducts'
 import { salesService, createPosSale } from '../../services/salesService'
@@ -32,6 +32,19 @@ const Pos = () => {
   const [saving,        setSaving]        = useState(false)
   const [receipt,       setReceipt]       = useState(null)
   const [error,         setError]         = useState(null)
+  const autoPrintedReceipt = useRef(null)
+
+  // Print only after the saved receipt is mounted. Stock refreshes must not
+  // unmount it or cause duplicate print dialogs; manual reprinting stays available.
+  useEffect(() => {
+    if (!receipt || autoPrintedReceipt.current === receipt) return
+    const timer = window.setTimeout(() => {
+      if (!document.getElementById('pos-receipt')) return
+      autoPrintedReceipt.current = receipt
+      window.print()
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [receipt])
 
   const filtered = useMemo(() => {
     let list = products
@@ -143,7 +156,7 @@ const Pos = () => {
     }
   }
 
-  if (loading) return <Loader fullPage label="Loading products…" />
+  if (loading && !receipt) return <Loader fullPage label="Loading products…" />
 
   return (
     <div className="pos-root" style={{ display: 'flex', gap: 20, height: 'calc(100vh - 90px)' }}>

@@ -649,8 +649,9 @@ select.input-base { cursor: pointer; }
   width: 80mm;
   max-width: 100%;
   margin: 0 auto;
-  /* Keep text within the printable area, with extra clearance on the right. */
-  padding: 4mm 7mm 4mm 3mm;
+  /* Existing clearance plus three monospace characters for the printer's right edge. */
+  --receipt-right-padding: calc(7mm + 3ch);
+  padding: 4mm var(--receipt-right-padding) 4mm 3mm;
   background: #fff;
   color: #000;
   font-family: 'Courier New', Courier, monospace;
@@ -713,7 +714,7 @@ select.input-base { cursor: pointer; }
     width: 80mm !important;
     max-width: 80mm !important;
     margin: 0 !important;
-    padding: 2mm 7mm 2mm 3mm !important;
+    padding: 2mm var(--receipt-right-padding) 2mm 3mm !important;
     color: #000 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
