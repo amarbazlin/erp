@@ -77,5 +77,7 @@ export const ROLE_PERMISSIONS = {
 }
 
 // ── Helper: resolve permissions for a role string ──────────────────────────────
-export const getPermissionsForRole = (role) =>
-  ROLE_PERMISSIONS[role] || []
+// NOTE: Role-based access is DISABLED — every authenticated user gets full
+// permissions and can view everything. The per-role map above is kept only
+// for reference and is no longer used.
+export const getPermissionsForRole = (_role) => ALL

@@ -172,4 +172,50 @@ export const salesService = {
   PAYMENT_METHODS: ['cash', 'card', 'bank_transfer', 'online'],
 }
 
+// ── Create a POS sale atomically ──────────────────────────────────────────────
+// Preferred path: a single atomic DB function (create_pos_sale). It
+// re-validates stock and totals server-side, inserts the sale, sale_items and
+// 'sale' inventory transactions in ONE transaction, and refuses to let stock
+// go negative. Falls back to the two-step flow if the function is not yet
+// installed (run SQL section 29).
+export const createPosSale = async ({ items, paymentMethod = 'cash', cashierId, customerId = null, discount = 0, notes = '' }) => {
+  const { data, error } = await supabase.rpc('create_pos_sale', {
+    p_items: (items || []).map(i => ({
+      product_id: i.product_id,
+      quantity:   parseInt(i.quantity),
+      unit_price: parseFloat(i.unit_price || 0),
+      unit_cost:  parseFloat(i.unit_cost || 0),
+    })),
+    p_payment_method: paymentMethod,
+    p_cashier_id:     cashierId || null,
+    p_customer_id:    customerId || null,
+    p_discount:       parseFloat(discount || 0),
+    p_notes:          notes || '',
+  })
+  if (!error) return data
+
+  if (!['404', '42883', 'PGRST202'].includes(error.code)) throw error
+
+  // Legacy fallback: validate stock first (the deduction trigger clamps at 0,
+  // so we must refuse overselling before writing anything).
+  const ids = (items || []).map(i => i.product_id)
+  const { data: stockRows, error: stockErr } = await supabase
+    .from('pos_products_view')
+    .select('id, name, available_stock')
+    .in('id', ids)
+  if (stockErr) throw stockErr
+  for (const i of items) {
+    const row = stockRows?.find(r => r.id === i.product_id)
+    const available = Math.floor(parseFloat(row?.available_stock || 0))
+    if (!row || parseInt(i.quantity) > available) {
+      throw new Error(`Insufficient stock for "${row?.name || i.product_id}": requested ${i.quantity}, available ${available}`)
+    }
+  }
+
+  // Create sale + items, then deduct inventory via recipes.
+  const sale = await salesService.create({ items, paymentMethod, cashierId, customerId, discount, notes })
+  await salesService.deductInventory(sale)
+  return { sale, items: null, legacy: true }
+}
+
 export default salesService

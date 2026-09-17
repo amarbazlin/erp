@@ -18,14 +18,14 @@ export const AuthProvider = ({ children }) => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user.id, session.user.email)
       else setLoading(false)
     })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user.id, session.user.email)
       else {
         setProfile(null)
         setLoading(false)
@@ -35,16 +35,47 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, email) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single()
-      setProfile(data)
+
+      if (error) {
+        console.error('Failed to fetch profile:', error.message)
+        setProfile(null)
+        return
+      }
+
+      if (data) {
+        setProfile(data)
+        return
+      }
+
+      // Self-heal: logged-in user has no profile row yet — create one as admin
+      const { data: created, error: createErr } = await supabase
+        .from('users')
+        .upsert({
+          id: userId,
+          email: email || null,
+          full_name: 'Administrator',
+          role: 'admin',
+          password_hash: 'managed-by-supabase-auth',
+        })
+        .select()
+        .single()
+
+      if (createErr) {
+        console.error('Failed to create missing profile:', createErr.message)
+        setProfile(null)
+      } else {
+        setProfile(created)
+      }
     } catch (err) {
       console.error('Failed to fetch profile:', err)
+      setProfile(null)
     } finally {
       setLoading(false)
     }

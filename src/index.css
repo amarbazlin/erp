@@ -623,4 +623,63 @@ select.input-base { cursor: pointer; }
 .gap-2        { gap: 8px; }
 .gap-3        { gap: 12px; }
 .gap-4        { gap: 16px; }
+/* ── 80mm thermal receipt (POS invoice) ─────────────────────────── */
+.thermal-receipt {
+  width: 76mm;
+  max-width: 76mm;
+  margin: 0 auto;
+  padding: 4mm 3mm;
+  background: #fff;
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 10.5px;
+  line-height: 1.4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+.thermal-receipt .tr-shop {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.thermal-receipt .tr-muted { font-size: 9.5px; color: #444; }
+.thermal-receipt .tr-divider {
+  border-top: 1px dashed #000;
+  margin: 4px 0;
+}
+.thermal-receipt .tr-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.thermal-receipt .tr-row span:last-child { text-align: right; white-space: nowrap; }
+.thermal-receipt .tr-total {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 2px 0;
+}
+.thermal-receipt table { width: 100%; border-collapse: collapse; margin: 2px 0; }
+.thermal-receipt th { font-weight: 700; border-bottom: 1px solid #000; padding: 2px 0; }
+.thermal-receipt td { padding: 1px 0; vertical-align: top; }
+
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body * { visibility: hidden !important; }
+  #pos-receipt, #pos-receipt * { visibility: visible !important; }
+  #pos-receipt {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 2mm 3mm !important;
+    box-shadow: none !important;
+  }
+}
 .w-full       { width: 100%; }

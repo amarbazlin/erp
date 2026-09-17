@@ -971,3 +971,183 @@ CREATE POLICY "product_images_delete"
 ON storage.objects
 FOR DELETE
 USING (bucket_id = 'product-images');
+
+
+-- =========================================================
+-- 29. ATOMIC POS SALE FUNCTION
+-- =========================================================
+-- Creates a complete POS sale in ONE database transaction:
+--   1. Validates every recipe ingredient has enough stock (with row locks)
+--   2. Inserts the sale, sale_items and 'sale' inventory_transactions
+--   3. Never allows inventory to go negative — raises an error instead
+--
+-- The React POS calls this via supabase.rpc('create_pos_sale', {...}).
+-- If it fails (e.g. insufficient stock) NOTHING is saved.
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION create_pos_sale(
+    p_items          JSONB,
+    p_payment_method TEXT     DEFAULT 'cash',
+    p_cashier_id     UUID     DEFAULT NULL,
+    p_customer_id    UUID     DEFAULT NULL,
+    p_discount       NUMERIC  DEFAULT 0,
+    p_notes          TEXT     DEFAULT ''
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_sale_id   UUID;
+    v_invoice   VARCHAR(50);
+    v_subtotal  NUMERIC := 0;
+    v_total     NUMERIC;
+    v_item      JSONB;
+    v_qty       INT;
+    v_price     NUMERIC;
+    v_cost      NUMERIC;
+    v_sale      sales%ROWTYPE;
+BEGIN
+    IF p_payment_method NOT IN ('cash', 'card', 'bank_transfer', 'online') THEN
+        RAISE EXCEPTION 'Invalid payment method: %', p_payment_method;
+    END IF;
+
+    IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION 'Sale must contain at least one item';
+    END IF;
+
+    -- ── STOCK CHECK: lock every ingredient and verify sufficiency ──
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+        v_qty := (v_item->>'quantity')::INT;
+        IF v_qty IS NULL OR v_qty <= 0 THEN
+            RAISE EXCEPTION 'Invalid quantity for product %', v_item->>'product_id';
+        END IF;
+
+        FOR v_r IN
+            SELECT pr.inventory_item_id,
+                   pr.quantity_required,
+                   ii.name,
+                   ii.current_quantity
+            FROM product_recipes pr
+            JOIN inventory_items ii ON ii.id = pr.inventory_item_id
+            WHERE pr.product_id = (v_item->>'product_id')::UUID
+            FOR UPDATE OF ii
+        LOOP
+            IF v_r.current_quantity < (v_r.quantity_required * v_qty) THEN
+                RAISE EXCEPTION 'Insufficient stock of "%": need %g, only %g available',
+                    v_r.name,
+                    ROUND(v_r.quantity_required * v_qty),
+                    ROUND(v_r.current_quantity);
+            END IF;
+        END LOOP;
+    END LOOP;
+
+    -- ── Recalculate totals server-side (never trust the frontend) ──
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+        SELECT selling_price, COALESCE(calculated_cost, 0)
+        INTO v_price, v_cost
+        FROM products
+        WHERE id = (v_item->>'product_id')::UUID AND is_active = TRUE;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Product % not found or inactive', v_item->>'product_id';
+        END IF;
+        v_subtotal := v_subtotal + v_price * (v_item->>'quantity')::INT;
+    END LOOP;
+    v_total := GREATEST(0, v_subtotal - COALESCE(p_discount, 0));
+
+    v_invoice := 'INV-' || to_char(NOW(), 'YYMMDD') || '-'
+                 || lpad((floor(random() * 90000) + 10000)::text, 5, '0');
+
+    INSERT INTO sales (
+        invoice_number, customer_id, cashier_id,
+        subtotal, discount, tax, total,
+        payment_method, payment_status, sale_status, notes
+    ) VALUES (
+        v_invoice, p_customer_id, p_cashier_id,
+        v_subtotal, COALESCE(p_discount, 0), 0, v_total,
+        p_payment_method, 'paid', 'completed', COALESCE(p_notes, '')
+    )
+    RETURNING * INTO v_sale;
+    v_sale_id := v_sale.id;
+
+    -- ── Sale items (store price AND cost at time of sale) ──
+    INSERT INTO sale_items (
+        sale_id, product_id, quantity,
+        unit_price, unit_cost, total_price, total_cost
+    )
+    SELECT
+        v_sale_id,
+        (v_item->>'product_id')::UUID,
+        (v_item->>'quantity')::INT,
+        p.selling_price,
+        COALESCE(p.calculated_cost, 0),
+        p.selling_price * (v_item->>'quantity')::INT,
+        COALESCE(p.calculated_cost, 0) * (v_item->>'quantity')::INT
+    FROM products p
+    JOIN jsonb_array_elements(p_items) v_item
+        ON p.id = (v_item->>'product_id')::UUID;
+
+    -- ── Deduct raw materials via 'sale' transactions (trigger updates stock) ──
+    INSERT INTO inventory_transactions (
+        inventory_item_id, transaction_type, quantity, reference_id, notes
+    )
+    SELECT
+        pr.inventory_item_id,
+        'sale',
+        pr.quantity_required * si.quantity,
+        v_sale_id,
+        'Sale ' || v_invoice || ' — ' || p.name
+    FROM sale_items si
+    JOIN product_recipes pr ON pr.product_id = si.product_id
+    JOIN products p         ON p.id = si.product_id
+    WHERE si.sale_id = v_sale_id;
+
+    RETURN jsonb_build_object(
+        'sale', to_jsonb(v_sale),
+        'items', (
+            SELECT COALESCE(jsonb_agg(to_jsonb(si)), '[]'::jsonb)
+            FROM sale_items si WHERE si.sale_id = v_sale_id
+        )
+    );
+END;
+$$;
+
+
+GRANT EXECUTE ON FUNCTION create_pos_sale(JSONB, TEXT, UUID, UUID, NUMERIC, TEXT) TO authenticated, anon;
+
+-- ============================================================
+-- SECTION 30: AUTO-CREATE USER PROFILE ON SIGNUP
+-- Every new auth user gets a row in public.users with role 'admin'.
+-- (First signup = app admin. Change the default below for staff accounts.)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.users (id, email, full_name, role, password_hash)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Staff'),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'admin'),
+    'managed-by-supabase-auth'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- If an auth user already exists without a profile row, backfill it:
+INSERT INTO public.users (id, email, full_name, role, password_hash)
+SELECT u.id, u.email, COALESCE(u.raw_user_meta_data->>'full_name', 'Staff'), 'admin', 'managed-by-supabase-auth'
+FROM auth.users u
+ON CONFLICT (id) DO NOTHING;
