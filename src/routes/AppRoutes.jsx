@@ -17,7 +17,6 @@ import EditProduct    from '../pages/products/EditProduct'
 import Inventory      from '../pages/inventory/Inventory'
 import Customers      from '../pages/customers/Customers'
 import CustomerDetail from '../pages/customers/CustomerDetail'
-import Analytics      from '../pages/analytics/Analytics'
 import Settings       from '../pages/settings/Settings'
 
 // Access denied
@@ -59,10 +58,8 @@ const AppRoutes = () => (
           <Route path="/customers/:id" element={<CustomerDetail />} />
         </Route>
 
-        {/* ── Analytics ── */}
-        <Route element={<RoleGuard permission={P.VIEW_ANALYTICS} />}>
-          <Route path="/analytics" element={<Analytics />} />
-        </Route>
+        {/* Legacy Analytics links now open the unified Dashboard. */}
+        <Route path="/analytics" element={<Navigate to="/" replace />} />
 
         {/* ── Settings — everyone, but tabs gated internally ── */}
         <Route path="/settings" element={<Settings />} />

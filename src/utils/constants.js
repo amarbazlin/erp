@@ -73,7 +73,6 @@ export const NAV_ITEMS = [
   { path: '/products',     label: 'Products',    icon: 'Cake'      },
   { path: '/inventory',    label: 'Inventory',   icon: 'Package'   },
   { path: '/customers',    label: 'Customers',   icon: 'Users2'    },
-  { path: '/analytics',    label: 'Analytics',   icon: 'BarChart3' },
   { path: '/settings',     label: 'Settings',    icon: 'Settings'  },
 ]
 

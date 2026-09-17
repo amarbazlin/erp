@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Cake, BarChart3, Settings, Sparkles, X
+  Cake, Settings, Sparkles, X
 } from 'lucide-react'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -10,7 +10,7 @@ import AppLogo from '../shared/AppLogo'
 
 const ICON_MAP = {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Cake, BarChart3, Settings,
+  Cake, Settings,
 }
 
 const NAV = [
@@ -19,7 +19,6 @@ const NAV = [
   { path: '/products',   label: 'Products',   icon: 'Cake',                          permission: P.VIEW_PRODUCTS     },
   { path: '/inventory',  label: 'Inventory',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
   { path: '/customers',  label: 'Customers',  icon: 'Users2',                        permission: P.VIEW_CUSTOMERS    },
-  { path: '/analytics',  label: 'Analytics',  icon: 'BarChart3',                     permission: P.VIEW_ANALYTICS    },
 ]
 
 const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {

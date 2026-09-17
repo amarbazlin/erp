@@ -56,11 +56,19 @@ test('forecast requires seven days and includes zero-sales days', () => {
   assert.equal(forecast.points[6].date, shiftDay('2026-09-17', 7))
 })
 
-test('Dashboard and Analytics use shared reporting without legacy service calls', async () => {
-  for (const page of ['dashboard/Dashboard', 'analytics/Analytics']) {
-    const source = await readFile(new URL(`../src/pages/${page}.jsx`, import.meta.url), 'utf8')
-    assert.match(source, /<SalesReport\s*\/>/)
-    assert.match(source, /<InventoryOverview\s*\/>/)
-    assert.doesNotMatch(source, /analyticsService|salesService/)
+test('Dashboard retains all shared reports without legacy service calls', async () => {
+  const source = await readFile(new URL('../src/pages/dashboard/Dashboard.jsx', import.meta.url), 'utf8')
+  assert.match(source, /<SalesReport\s*\/>/)
+  assert.match(source, /<InventoryOverview\s*\/>/)
+  assert.doesNotMatch(source, /analyticsService|salesService/)
+})
+
+test('Analytics is removed from navigation and its old route redirects to Dashboard', async () => {
+  for (const file of ['components/layout/Sidebar.jsx', 'utils/constants.js']) {
+    const source = await readFile(new URL(`../src/${file}`, import.meta.url), 'utf8')
+    assert.doesNotMatch(source, /\/analytics/)
   }
+  const routes = await readFile(new URL('../src/routes/AppRoutes.jsx', import.meta.url), 'utf8')
+  assert.match(routes, /path="\/analytics" element=\{<Navigate to="\/" replace \/>\}/)
+  assert.doesNotMatch(routes, /import Analytics|<Analytics/)
 })
