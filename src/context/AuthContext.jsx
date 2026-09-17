@@ -41,9 +41,11 @@ export const AuthProvider = ({ children }) => {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
-      if (error) {
+      // PGRST116 = no rows — that's the "missing profile" case, handled below.
+      // Any other error is a real failure (e.g. RLS).
+      if (error && error.code !== 'PGRST116') {
         console.error('Failed to fetch profile:', error.message)
         setProfile(null)
         return
@@ -52,6 +54,20 @@ export const AuthProvider = ({ children }) => {
       if (data) {
         setProfile(data)
         return
+      }
+
+      // A profile row may already exist for this email under a different id —
+      // adopt it rather than failing the email UNIQUE constraint.
+      if (email) {
+        const { data: byEmail } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle()
+        if (byEmail) {
+          setProfile(byEmail)
+          return
+        }
       }
 
       // Self-heal: logged-in user has no profile row yet — create one as admin
@@ -65,10 +81,10 @@ export const AuthProvider = ({ children }) => {
           password_hash: 'managed-by-supabase-auth',
         })
         .select()
-        .single()
+        .maybeSingle()
 
-      if (createErr) {
-        console.error('Failed to create missing profile:', createErr.message)
+      if (createErr || !created) {
+        console.error('Failed to create missing profile:', createErr?.message)
         setProfile(null)
       } else {
         setProfile(created)

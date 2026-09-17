@@ -179,6 +179,11 @@ export const salesService = {
 // go negative. Falls back to the two-step flow if the function is not yet
 // installed (run SQL section 29).
 export const createPosSale = async ({ items, paymentMethod = 'cash', cashierId, customerId = null, discount = 0, notes = '' }) => {
+  // Resolve a cashier_id that actually exists in the users table.
+  // sales.cashier_id has an FK to users(id) — passing the raw auth uid fails
+  // when the profile row is missing or keyed differently.
+  const resolvedCashierId = await resolveCashierId(cashierId)
+
   const { data, error } = await supabase.rpc('create_pos_sale', {
     p_items: (items || []).map(i => ({
       product_id: i.product_id,
@@ -187,7 +192,7 @@ export const createPosSale = async ({ items, paymentMethod = 'cash', cashierId, 
       unit_cost:  parseFloat(i.unit_cost || 0),
     })),
     p_payment_method: paymentMethod,
-    p_cashier_id:     cashierId || null,
+    p_cashier_id:     resolvedCashierId,
     p_customer_id:    customerId || null,
     p_discount:       parseFloat(discount || 0),
     p_notes:          notes || '',
@@ -213,9 +218,48 @@ export const createPosSale = async ({ items, paymentMethod = 'cash', cashierId, 
   }
 
   // Create sale + items, then deduct inventory via recipes.
-  const sale = await salesService.create({ items, paymentMethod, cashierId, customerId, discount, notes })
+  const sale = await salesService.create({ items, paymentMethod, cashierId: resolvedCashierId, customerId, discount, notes })
   await salesService.deductInventory(sale)
   return { sale, items: null, legacy: true }
+}
+
+// ── Resolve a cashier id that satisfies the sales_cashier_id_fkey ────────────
+// Order: given id (if it exists in users) → users row by auth email →
+// self-heal (create the profile row keyed by the auth uid) → null
+// (cashier_id is nullable, so the sale can still go through).
+const resolveCashierId = async (candidateId) => {
+  if (candidateId) {
+    try {
+      const { data } = await supabase.from('users').select('id').eq('id', candidateId).maybeSingle()
+      if (data?.id) return data.id
+    } catch { /* fall through */ }
+  }
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const email = user?.email
+    if (email) {
+      // A profile row may already exist for this email under a different id
+      const { data: byEmail } = await supabase.from('users').select('id').eq('email', email).maybeSingle()
+      if (byEmail?.id) return byEmail.id
+
+      // Self-heal: create the missing profile row
+      const { data: created } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email,
+          full_name: email.split('@')[0] || 'Cashier',
+          role: 'admin',
+          password_hash: 'managed-by-supabase-auth',
+        })
+        .select('id')
+        .maybeSingle()
+      if (created?.id) return created.id
+    }
+  } catch { /* fall through */ }
+
+  return null
 }
 
 export default salesService
