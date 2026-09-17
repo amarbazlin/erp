@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  RotateCcw, BarChart3, Settings, Sparkles, X
+  Cake, BarChart3, Settings, Sparkles, X
 } from 'lucide-react'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -10,16 +10,16 @@ import AppLogo from '../shared/AppLogo'
 
 const ICON_MAP = {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  RotateCcw, BarChart3, Settings,
+  Cake, BarChart3, Settings,
 }
 
 const NAV = [
-  { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null },
-  { path: '/inventory',  label: 'Inventory',  icon: 'Package',                        permission: P.VIEW_INVENTORY      },
-  { path: '/customers',  label: 'Customers',  icon: 'Users2',                         permission: P.VIEW_CUSTOMERS      },
-  { path: '/sales',      label: 'Sales',      icon: 'ShoppingCart',                   permission: P.VIEW_SALES          },
-  { path: '/returns',    label: 'Returns',    icon: 'RotateCcw',                      permission: P.VIEW_RETURNS        },
-  { path: '/analytics',  label: 'Analytics',  icon: 'BarChart3',                      permission: P.VIEW_ANALYTICS      },
+  { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null                },
+  { path: '/pos',        label: 'POS / Sales', icon: 'ShoppingCart',                  permission: P.VIEW_SALES        },
+  { path: '/products',   label: 'Products',   icon: 'Cake',                          permission: P.VIEW_PRODUCTS     },
+  { path: '/inventory',  label: 'Materials',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
+  { path: '/customers',  label: 'Customers',  icon: 'Users2',                        permission: P.VIEW_CUSTOMERS    },
+  { path: '/analytics',  label: 'Analytics',  icon: 'BarChart3',                     permission: P.VIEW_ANALYTICS    },
 ]
 
 const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {

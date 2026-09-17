@@ -57,6 +57,22 @@ export const customerService = {
     const { error } = await supabase.from('customers').delete().eq('id', id)
     if (error) throw error
   },
+
+  getSummary: async () => {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('total_orders, total_spent, created_at')
+    if (error) throw error
+    const items = data || []
+    const now = new Date()
+    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+    return {
+      total:     items.length,
+      newThisMonth: items.filter(c => new Date(c.created_at) >= monthAgo).length,
+      totalSpent:   items.reduce((s, c) => s + parseFloat(c.total_spent || 0), 0),
+      totalOrders:  items.reduce((s, c) => s + (parseInt(c.total_orders) || 0), 0),
+    }
+  },
 }
 
 export default customerService

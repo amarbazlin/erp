@@ -43,6 +43,12 @@ export const ROLE_LABELS = {
   [ROLES.CASHIER]: 'Cashier',
 }
 
+export const ROLE_COLORS = {
+  [ROLES.ADMIN]:   { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+  [ROLES.MANAGER]: { bg: '#dbeafe', color: '#2563eb', border: '#bfdbfe' },
+  [ROLES.CASHIER]: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+}
+
 // ── Permission map — what each role can do ─────────────────────────────────────
 const ALL = Object.values(P)
 

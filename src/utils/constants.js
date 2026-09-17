@@ -2,6 +2,21 @@
 export const APP_NAME = 'SweetERP'
 export const APP_VERSION = '1.0.0'
 
+// Stock status thresholds (for available product stock)
+export const STOCK_STATUS = {
+  OUT_OF_STOCK: 'out_of_stock',
+  LOW:          'low',
+  NORMAL:       'normal',
+  OVERSTOCKED:  'overstocked',
+}
+
+export const getStockStatus = (quantity, threshold = 5) => {
+  const q = parseFloat(quantity) || 0
+  if (q <= 0) return STOCK_STATUS.OUT_OF_STOCK
+  if (q <= threshold) return STOCK_STATUS.LOW
+  return STOCK_STATUS.NORMAL
+}
+
 // Raw material units (matches inventory_items.unit constraint)
 export const MATERIAL_UNITS = ['g', 'ml', 'unit']
 

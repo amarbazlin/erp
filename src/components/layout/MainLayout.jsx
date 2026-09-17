@@ -2,11 +2,33 @@ import React, { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
-import { useAlerts } from '../../hooks/useAlerts'
+import { supabase } from '../../services/supabase'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 
+// Live count of low-stock raw materials (badge on bell icon)
+const useLowStockCount = () => {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    let active = true
+    const load = () => {
+      supabase
+        .from('inventory_items')
+        .select('current_quantity, low_stock_threshold', { count: 'exact' })
+        .eq('is_active', true)
+        .then(({ data }) => {
+          if (!active) return
+          setCount((data || []).filter(i => parseFloat(i.current_quantity) <= parseFloat(i.low_stock_threshold)).length)
+        })
+    }
+    load()
+    const interval = setInterval(load, 60000)
+    return () => { active = false; clearInterval(interval) }
+  }, [])
+  return count
+}
+
 const MainLayout = () => {
-  const { unresolvedCount } = useAlerts()
+  const lowStockCount = useLowStockCount()
   const { isMobile, isTablet } = useBreakpoint()
   const isCompact = isMobile || isTablet
   const location = useLocation()
@@ -39,7 +61,7 @@ const MainLayout = () => {
 
       {/* ── Sidebar ── */}
       <Sidebar
-        alertCount={unresolvedCount}
+        alertCount={lowStockCount}
         isOpen={sidebarOpen}
         isMobile={isCompact}
         onClose={closeSidebar}
@@ -54,7 +76,7 @@ const MainLayout = () => {
         }}
       >
         <Navbar
-          alertCount={unresolvedCount}
+          alertCount={lowStockCount}
           onToggleSidebar={toggleSidebar}
           isMobile={isCompact}
         />
