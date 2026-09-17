@@ -11,6 +11,9 @@ export const formatCurrency = (amount, currency = 'LKR') => {
   }).format(amount)
 }
 
+// Recharts supplies a series name as argument two, not an ISO currency code.
+export const formatChartCurrency = (amount) => formatCurrency(amount)
+
 // Short currency (e.g. Rs. 1,234)
 export const formatCurrencyShort = (amount) => {
   if (amount === null || amount === undefined) return '—'

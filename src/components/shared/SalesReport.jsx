@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { RefreshCw } from 'lucide-react'
 import { analyticsService } from '../../services/analyticsService'
 import { businessDay, shiftDay, dayBounds, SALES_TIMEZONE } from '../../utils/salesReporting'
-import { formatCurrency, formatCurrencyShort } from '../../utils/formatters'
+import { formatCurrency, formatCurrencyShort, formatChartCurrency } from '../../utils/formatters'
 import Button from './Button'
 import Loader from './Loader'
 
@@ -16,7 +16,7 @@ const Chart = ({ data, forecast = false }) => (
       <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
       <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
       <YAxis tick={{ fontSize: 11 }} width={70} tickFormatter={formatCurrencyShort} />
-      <Tooltip formatter={formatCurrency} contentStyle={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }} />
+      <Tooltip formatter={formatChartCurrency} contentStyle={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }} />
       <Legend />
       {forecast ? <Line dataKey="forecast" name="Estimated sales" stroke="#a855f7" strokeDasharray="5 5" strokeWidth={2} /> : <>
         <Line dataKey="revenue" name="Sales" stroke="#f97316" strokeWidth={2} />
@@ -92,7 +92,7 @@ export default function SalesReport({ initialDays = 30 }) {
       <div style={grid}>
         <div className="card" style={panel}><h3>Sales by payment method</h3>
           {report.payments.length ? <ResponsiveContainer width="100%" height={230}>
-            <BarChart data={report.payments}><CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" /><XAxis dataKey="name" /><YAxis width={70} tickFormatter={formatCurrencyShort} /><Tooltip formatter={formatCurrency} /><Bar dataKey="value" name="Sales" fill="#f97316" /></BarChart>
+            <BarChart data={report.payments}><CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" /><XAxis dataKey="name" /><YAxis width={70} tickFormatter={formatCurrencyShort} /><Tooltip formatter={formatChartCurrency} /><Bar dataKey="value" name="Sales" fill="#f97316" /></BarChart>
           </ResponsiveContainer> : <p>No payments in this period.</p>}
         </div>
         <div className="card" style={panel}><h3>Top selling products</h3>

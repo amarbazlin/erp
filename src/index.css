@@ -660,10 +660,13 @@ select.input-base { cursor: pointer; }
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 .thermal-receipt .tr-shop {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: 'Arial Black', Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #000;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  text-transform: none;
 }
 .thermal-receipt .tr-muted { font-size: 11px; color: #000; }
 .thermal-receipt .tr-divider {

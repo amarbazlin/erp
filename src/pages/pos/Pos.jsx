@@ -24,14 +24,6 @@ const Pos = () => {
     const { user, profile } = useAuth()
   const { products, loading, refetch } = usePosProducts()
 
-  const [businessName, setBusinessName] = useState(import.meta.env.VITE_BUSINESS_NAME || 'KAH Laban (PVT) Ltd')
-  useEffect(() => {
-    supabase.from('app_settings').select('value').eq('key', 'business_name').maybeSingle()
-      .then(({ data, error }) => {
-        if (!error && data?.value) setBusinessName(data.value)
-      })
-  }, [])
-
   const [search,        setSearch]        = useState('')
   const [cart,          setCart]          = useState([])   // { product, quantity }
   const [customerPhone, setCustomerPhone] = useState('')
@@ -340,7 +332,7 @@ const Pos = () => {
           <div>
             <div id="pos-receipt" className="thermal-receipt">
               <div style={{ textAlign: 'center' }}>
-                                <div className="tr-shop">{businessName}</div>
+                <div className="tr-shop">KAH Laban</div>
                 <div className="tr-muted">— Sale Receipt —</div>
               </div>
               <div className="tr-divider" />
