@@ -11,7 +11,9 @@ import Login from '../pages/auth/Login'
 // Core pages
 import Dashboard      from '../pages/dashboard/Dashboard'
 import Pos            from '../pages/pos/Pos'
-import Products       from '../pages/products/Products'
+// Product forms are reached from the Inventory page's Finished Products tab —
+// the standalone Products list page was removed, so there is no Products page
+// import here.
 import AddProduct     from '../pages/products/AddProduct'
 import EditProduct    from '../pages/products/EditProduct'
 import Inventory      from '../pages/inventory/Inventory'
@@ -40,14 +42,16 @@ const AppRoutes = () => (
           <Route path="/pos" element={<Pos />} />
         </Route>
 
-        {/* ── Products & recipes ── */}
-        <Route element={<RoleGuard permission={P.VIEW_PRODUCTS} />}>
-          <Route path="/products" element={<Products />} />
-        </Route>
+        {/* ── Product add / edit forms ──
+            There is no standalone Products page any more; finished products are
+            managed from the Inventory page, which links into these forms. */}
         <Route element={<RoleGuard permission={P.MANAGE_PRODUCTS} />}>
           <Route path="/products/add"      element={<AddProduct />} />
           <Route path="/products/edit/:id" element={<EditProduct />} />
         </Route>
+
+        {/* The old /products list route — keep it working as a redirect. */}
+        <Route path="/products" element={<Navigate to="/inventory" replace />} />
 
         {/* ── Inventory: raw materials + finished products ── */}
         <Route element={<RoleGuard permission={P.VIEW_INVENTORY} />}>

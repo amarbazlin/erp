@@ -78,8 +78,8 @@ const FinishedProducts = () => {
     : 0
   const lowStockProducts = displayProducts.filter(p => p.available_stock <= LOW_STOCK_PRODUCTS)
 
-  const openAdd = () => navigate('/products/add', { state: { from: 'inventory' } })
-  const openEdit = (p) => navigate(`/products/edit/${p.id}`, { state: { from: 'inventory' } })
+  const openAdd = () => navigate('/products/add')
+  const openEdit = (p) => navigate(`/products/edit/${p.id}`)
 
   const handleToggleActive = async () => {
     setSaving(true)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2, ImagePlus, X } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { inventoryService } from '../../services/inventoryService'
@@ -13,9 +13,8 @@ const emptyRow = () => ({ inventory_item_id: '', quantity_required: '' })
 
 const EditProduct = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { id } = useParams()
-  const backTo = location.state?.from === 'inventory' ? '/inventory' : '/products'
+  const backTo = '/inventory'
 
   const [materials, setMaterials] = useState([])
   const [form, setForm] = useState(null)

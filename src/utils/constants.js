@@ -67,10 +67,11 @@ export const formatQty = (qty, unit = 'g') => {
 }
 
 // Sidebar nav items — centralised so both Sidebar and Routes use same structure
+// Finished products are managed inside the Inventory page, so there is no
+// separate Products entry here.
 export const NAV_ITEMS = [
   { path: '/',             label: 'Dashboard',   icon: 'LayoutDashboard', exact: true },
   { path: '/pos',          label: 'POS / Sales', icon: 'ShoppingCart' },
-  { path: '/products',     label: 'Products',    icon: 'Cake'      },
   { path: '/inventory',    label: 'Inventory',   icon: 'Package'   },
   { path: '/finance',      label: 'Finance',     icon: 'Wallet'    },
   { path: '/customers',    label: 'Customers',   icon: 'Users2'    },
