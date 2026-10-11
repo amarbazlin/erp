@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, RefreshCw, Package, Pencil, Power, AlertTriangle } from 'lucide-react'
+import { Plus, RefreshCw, Package, Pencil, Power, Trash2, AlertTriangle } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -10,6 +10,7 @@ import SearchBar from '../../components/shared/SearchBar'
 import Loader from '../../components/shared/Loader'
 import StockStatusBadge from '../../components/inventory/StockStatusBadge'
 import { formatCurrency } from '../../utils/formatters'
+import { productDeleteBlockReason } from '../../utils/inventoryDeletion'
 
 // Products at/below this many producible units are flagged as low stock.
 const LOW_STOCK_PRODUCTS = 5
@@ -32,6 +33,8 @@ const FinishedProducts = () => {
 
   const [message, setMessage] = useState(null)
   const [toggleTarget, setToggleTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const notify = useCallback((type, text) => setMessage({ type, text }), [])
 
@@ -90,6 +93,31 @@ const FinishedProducts = () => {
       notify('error', err.message || 'Could not update the product.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const openDelete = async (p) => {
+    // A product with sales can never be deleted — surface that before opening
+    // the dialog so the admin is offered deactivate instead of a dead end.
+    try {
+      const saleCount = await productService.getSaleCount(p.id)
+      setDeleteTarget({ ...p, saleCount, blocked: productDeleteBlockReason(saleCount) })
+    } catch {
+      setDeleteTarget({ ...p, saleCount: 0, blocked: null })
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const deleted = await productService.delete(deleteTarget.id)
+      notify('success', `${deleted.name} was permanently deleted.`)
+      setDeleteTarget(null)
+      await load()
+    } catch (err) {
+      notify('error', err.message || 'Could not delete the product.')
+    } finally {
+      setDeleting(false)
     }
   }
   return (
@@ -225,6 +253,13 @@ const margin = p.profit_margin
                             <button style={iconBtn} onClick={() => setToggleTarget(p)} title={p.is_active ? 'Deactivate' : 'Reactivate'}>
                               <Power size={13} color={p.is_active ? 'var(--danger)' : 'var(--success)'} />
                             </button>
+                            <button
+                              style={{ ...iconBtn, borderColor: '#fecaca', background: 'var(--danger-bg)' }}
+                              onClick={() => openDelete(p)}
+                              title="Delete product permanently"
+                            >
+                              <Trash2 size={13} color="var(--danger)" />
+                            </button>
                           </>
                         )}
                       </div>
@@ -271,6 +306,45 @@ const margin = p.profit_margin
           {toggleTarget?.is_active
             ? <>Deactivate <strong>{toggleTarget?.name}</strong>? It will be hidden from the POS and product lists, but its recipe and history are kept.</>
             : <>Reactivate <strong>{toggleTarget?.name}</strong>? It will be available on the POS again.</>}
+        </p>
+      </Modal>
+
+      {/* Permanent delete confirm — blocked when the product has sales */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Product"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button
+              variant="danger"
+              loading={deleting}
+              disabled={!!deleteTarget?.blocked}
+              onClick={handleDelete}
+            >
+              Delete permanently
+            </Button>
+          </>
+        }
+      >
+        {deleteTarget?.blocked ? (
+          <p style={{
+            fontSize: 13, color: 'var(--warning-text)', lineHeight: 1.6, marginTop: 0,
+            background: 'var(--warning-bg)', border: '1px solid #fde68a',
+            borderRadius: 8, padding: '10px 12px',
+          }}>
+            {deleteTarget.blocked}
+          </p>
+        ) : (
+          <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 0 }}>
+            Permanently delete <strong>{deleteTarget?.name}</strong>? This cannot be undone —
+            the product and its raw-material recipe are removed for good.
+          </p>
+        )}
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          If you only want to hide it from the POS, cancel and use
+          {' '}<strong>Deactivate</strong> instead — the data is kept and can be restored.
         </p>
       </Modal>
     </div>

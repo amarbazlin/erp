@@ -100,6 +100,37 @@ export const productService = {
     return data
   },
 
+  // How many sale_items reference this product. A product with any sales is
+  // refused a permanent delete — sale_items.product_id is ON DELETE RESTRICT and
+  // removing those rows would rewrite historical invoices and finance totals.
+  getSaleCount: async (id) => {
+    const { count, error } = await supabase
+      .from('sale_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('product_id', id)
+    if (error) throw error
+    return count || 0
+  },
+
+  // Permanently delete a product and its recipe. product_recipes and
+  // product_sales_analytics cascade away on their own FKs.
+  delete: async (id) => {
+    const { error: recipeErr } = await supabase
+      .from('product_recipes')
+      .delete()
+      .eq('product_id', id)
+    if (recipeErr) throw recipeErr
+
+    const { data, error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
   // Soft-delete / toggle active
   setActive: async (id, isActive) => {
     const { data, error } = await supabase

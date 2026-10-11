@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { Plus, RefreshCw, Package, Pencil, Power, AlertTriangle, ArrowDownToLine, SlidersHorizontal } from 'lucide-react'
+import { Plus, RefreshCw, Package, Pencil, Power, Trash2, AlertTriangle, ArrowDownToLine, SlidersHorizontal } from 'lucide-react'
 import { inventoryService } from '../../services/inventoryService'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../../components/shared/Modal'
@@ -8,6 +8,7 @@ import SearchBar from '../../components/shared/SearchBar'
 import Loader from '../../components/shared/Loader'
 import { formatCurrency } from '../../utils/formatters'
 import { MATERIAL_UNITS } from '../../utils/constants'
+import { recipeDetachNote } from '../../utils/inventoryDeletion'
 
 const UNITS = MATERIAL_UNITS
 
@@ -69,6 +70,8 @@ const Materials = () => {
   const [moveForm, setMoveForm] = useState(EMPTY_MOVEMENT)
 
   const [toggleTarget, setToggleTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const notify = useCallback((type, text) => setMessage({ type, text }), [])
 
@@ -213,6 +216,34 @@ const Materials = () => {
       setSaving(false)
     }
   }
+
+  const openDelete = async (item) => {
+    // Load the recipe usage first so the confirmation can warn precisely.
+    try {
+      const recipeCount = await inventoryService.getRecipeUsageCount(item.id)
+      setDeleteTarget({ ...item, recipeCount })
+    } catch {
+      // Counting is advisory — never block opening the dialog because of it.
+      setDeleteTarget({ ...item, recipeCount: 0 })
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const result = await inventoryService.delete(deleteTarget.id)
+      const extra = result.detachedRecipes > 0
+        ? ` It was removed from ${result.detachedRecipes} recipe${result.detachedRecipes === 1 ? '' : 's'} and those product costs were recalculated.`
+        : ''
+      notify('success', `${result.name} was permanently deleted.${extra}`)
+      setDeleteTarget(null)
+      await load()
+    } catch (err) {
+      notify('error', err.message || 'Could not delete the material.')
+    } finally {
+      setDeleting(false)
+    }
+  }
   const displayItems = useMemo(() => {
     let list = items
     if (search) {
@@ -348,6 +379,13 @@ const Materials = () => {
                         </button>
                         <button style={iconBtn} onClick={() => setToggleTarget(item)} title={item.is_active ? 'Deactivate' : 'Reactivate'}>
                           <Power size={13} color={item.is_active ? 'var(--danger)' : 'var(--success)'} />
+                        </button>
+                        <button
+                          style={{ ...iconBtn, borderColor: '#fecaca', background: 'var(--danger-bg)' }}
+                          onClick={() => openDelete(item)}
+                          title="Delete material permanently"
+                        >
+                          <Trash2 size={13} color="var(--danger)" />
                         </button>
                       </div>
                     </td>
@@ -494,6 +532,37 @@ const Materials = () => {
           {toggleTarget?.is_active
             ? <>Deactivate <strong>{toggleTarget?.name}</strong>? It stays in the database and existing recipes keep working, but it will be hidden from the material list by default.</>
             : <>Reactivate <strong>{toggleTarget?.name}</strong>?</>}
+        </p>
+      </Modal>
+
+      {/* Permanent delete confirm — deactivating stays available as the safe option */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Material"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="danger" loading={deleting} onClick={handleDelete}>Delete permanently</Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 0 }}>
+          Permanently delete <strong>{deleteTarget?.name}</strong>? This cannot be undone —
+          the material and its stock movement history are removed for good.
+        </p>
+        {recipeDetachNote(deleteTarget?.recipeCount) && (
+          <p style={{
+            fontSize: 12.5, color: 'var(--warning-text)', lineHeight: 1.6,
+            background: 'var(--warning-bg)', border: '1px solid #fde68a',
+            borderRadius: 8, padding: '8px 11px', marginBottom: 14,
+          }}>
+            {recipeDetachNote(deleteTarget?.recipeCount)}
+          </p>
+        )}
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          If you only want to hide it from the material list, cancel and use
+          {' '}<strong>Deactivate</strong> instead — the data is kept and can be restored.
         </p>
       </Modal>
     </div>

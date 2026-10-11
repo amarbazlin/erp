@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Edit2, Trash2, Package } from 'lucide-react'
+import { Plus, Edit2, Power, Package } from 'lucide-react'
 import { productService } from '../../services/productService'
 import { useProducts } from '../../hooks/useProducts'
 import StockStatusBadge from '../../components/inventory/StockStatusBadge'
@@ -37,10 +37,11 @@ const Products = () => {
     return list
   }, [products, search])
 
-  const handleDelete = async () => {
+  const handleToggleActive = async () => {
     setDeleting(true)
     try {
-      await productService.setActive(deleteTarget.id, false)
+      const next = !deleteTarget.is_active
+      await productService.setActive(deleteTarget.id, next)
       setDeleteTarget(null)
       refetch()
     } catch (err) {
@@ -109,8 +110,14 @@ const Products = () => {
                       <td style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, color: margin >= 0 ? 'var(--success)' : 'var(--danger)' }}>{margin.toFixed(1)}%</td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={() => navigate(`/products/edit/${p.id}`)} style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: 'var(--text-secondary)' }}><Edit2 size={13} /></button>
-                          <button onClick={() => setDeleteTarget(p)} style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: 'var(--danger)' }}><Trash2 size={13} /></button>
+                          <button onClick={() => navigate(`/products/edit/${p.id}`)} title="Edit product" style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: 'var(--text-secondary)' }}><Edit2 size={13} /></button>
+                          <button
+                            onClick={() => setDeleteTarget(p)}
+                            title={p.is_active ? 'Deactivate product' : 'Reactivate product'}
+                            style={{ background: 'none', border: '1px solid var(--card-border)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: p.is_active ? 'var(--danger)' : 'var(--success)' }}
+                          >
+                            <Power size={13} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -122,19 +129,25 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Delete modal */}<Modal
+      {/* Deactivate / reactivate modal */}<Modal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="Deactivate Product"
+        title={deleteTarget?.is_active ? 'Deactivate Product' : 'Reactivate Product'}
         size="sm"
       >
         <p style={{ fontSize: 13.5, marginBottom: 20 }}>
-          Are you sure you want to deactivate <strong>{deleteTarget?.name}</strong>?
-          This will hide it from the POS. You can reactivate it later from the product edit page.
+          {deleteTarget?.is_active ? (
+            <>Are you sure you want to deactivate <strong>{deleteTarget?.name}</strong>?
+            This will hide it from the POS. You can reactivate it here or from the product edit page.</>
+          ) : (
+            <>Reactivate <strong>{deleteTarget?.name}</strong>? It will be available on the POS again.</>
+          )}
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
           <Button variant="secondary" onClick={() => setDeleteTarget(null)} type="button">Cancel</Button>
-          <Button variant="primary" loading={deleting} onClick={handleDelete}>Deactivate</Button>
+          <Button variant="primary" loading={deleting} onClick={handleToggleActive}>
+            {deleteTarget?.is_active ? 'Deactivate' : 'Reactivate'}
+          </Button>
         </div>
       </Modal>
     </div>

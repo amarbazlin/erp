@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { resolveProfileId } from '../utils/profileId'
 
 // ── Raw material categories ───────────────────────────────────────────────────
 export const inventoryCategoryService = {
@@ -110,6 +111,47 @@ export const inventoryService = {
     }
   },
 
+  // How many recipes currently use this material. Used to warn the admin before
+  // a permanent delete, since deleting the material detaches those recipes.
+  getRecipeUsageCount: async (id) => {
+    const { count, error } = await supabase
+      .from('product_recipes')
+      .select('id', { count: 'exact', head: true })
+      .eq('inventory_item_id', id)
+    if (error) throw error
+    return count || 0
+  },
+
+  // Permanently delete a raw material. The material's recipe rows are removed
+  // first — product_recipes.inventory_item_id is ON DELETE RESTRICT, so the
+  // delete would otherwise fail — and the products that used it are recosted
+  // from the database. inventory_transactions cascade away with the item.
+  delete: async (id) => {
+    const recipeCount = await inventoryService.getRecipeUsageCount(id)
+
+    if (recipeCount > 0) {
+      const { error: recipeErr } = await supabase
+        .from('product_recipes')
+        .delete()
+        .eq('inventory_item_id', id)
+      if (recipeErr) throw recipeErr
+    }
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+
+    // Recipe rows changed, so the cached product costs are stale. The DB
+    // trigger handles it on most setups; this covers older databases.
+    if (recipeCount > 0) await inventoryService.syncProductCosts(id)
+
+    return { ...data, detachedRecipes: recipeCount }
+  },
+
   setActive: async (id, isActive) => {
     const { data, error } = await supabase
       .from('inventory_items')
@@ -152,6 +194,11 @@ export const inventoryService = {
   // Record a stock movement. quantity is positive.
   // purchase/return ADD stock, sale/waste DEDUCT, adjustment SETS absolute level.
   addTransaction: async ({ inventoryItemId, type, quantity, costPerUnit = null, referenceId = null, notes = '', createdBy = null }) => {
+    // created_by is a FK to users(id) — the profile row key, not the Auth uid.
+    // Pass the raw Auth uid and the insert fails with a 23503, which is what
+    // blocked adding/updating stock. Resolving it here fixes every caller.
+    const authorId = await resolveProfileId(createdBy)
+
     const { data, error } = await supabase
       .from('inventory_transactions')
       .insert([{
@@ -161,12 +208,54 @@ export const inventoryService = {
         cost_per_unit:     costPerUnit,
         reference_id:      referenceId,
         notes,
-        created_by:        createdBy,
+        created_by:        authorId,
       }])
       .select()
       .single()
     if (error) throw error
     return data
+  },
+
+  // Re-derive `products.calculated_cost` from the recipes that remain after a
+  // material was deleted, using the same maths as the product_cost_view. The
+  // DB trigger normally maintains this; calling it explicitly keeps older
+  // databases consistent.
+  syncProductCosts: async (removedInventoryItemId = null) => {
+    let recipeQuery = supabase
+      .from('product_recipes')
+      .select('product_id, inventory_item_id, quantity_required')
+
+    if (removedInventoryItemId) {
+      // Products that were still referencing the deleted material are gone from
+      // product_recipes now, so this recalculates every affected product from
+      // whatever is left.
+      recipeQuery = recipeQuery.neq('inventory_item_id', removedInventoryItemId)
+    }
+
+    const [{ data: recipes, error: recipeErr }, { data: items, error: itemErr }] = await Promise.all([
+      recipeQuery,
+      supabase.from('inventory_items').select('id, cost_per_unit'),
+    ])
+    if (recipeErr) throw recipeErr
+    if (itemErr) throw itemErr
+
+    const unitCost = Object.fromEntries((items || []).map(i => [i.id, parseFloat(i.cost_per_unit) || 0]))
+
+    const totals = new Map()
+    for (const r of recipes || []) {
+      const perUnit = (parseFloat(r.quantity_required) || 0) * (unitCost[r.inventory_item_id] || 0)
+      totals.set(r.product_id, (totals.get(r.product_id) || 0) + perUnit)
+    }
+
+    // Round once, at the end, so the running total never accumulates float dust.
+    await Promise.all(
+      [...totals.entries()].map(([productId, total]) =>
+        supabase
+          .from('products')
+          .update({ calculated_cost: Number(total.toFixed(2)) })
+          .eq('id', productId)
+      )
+    )
   },
 }
 
