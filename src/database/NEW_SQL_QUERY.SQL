@@ -341,6 +341,38 @@ CREATE TABLE sale_items (
 
 
 -- =========================================================
+-- 10b. SALE RETURNS
+-- =========================================================
+-- Tracks partial or full returns of completed sales. Each return row restores
+-- the corresponding raw-material stock via a 'return' inventory transaction
+-- (see the update_inventory_quantity trigger which ADDS stock for type 'return').
+CREATE TABLE sale_returns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    sale_id UUID NOT NULL
+        REFERENCES sales(id)
+        ON DELETE CASCADE,
+
+    sale_item_id UUID NOT NULL
+        REFERENCES sale_items(id)
+        ON DELETE CASCADE,
+
+    quantity INTEGER NOT NULL
+        CHECK (quantity > 0),
+
+    reason TEXT,
+
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    created_by UUID REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+CREATE INDEX idx_sale_returns_sale ON sale_returns(sale_id);
+CREATE INDEX idx_sale_returns_item ON sale_returns(sale_item_id);
+
+
+-- =========================================================
 -- 11. EXPENSES
 -- =========================================================
 

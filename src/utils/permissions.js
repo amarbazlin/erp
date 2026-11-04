@@ -67,17 +67,21 @@ export const ROLE_PERMISSIONS = {
     P.MANAGE_SETTINGS,
   ],
 
-  // Cashier — POS sales + customers
+  // Cashier — POS sales + Sales history page only
   [ROLES.CASHIER]: [
-    P.VIEW_DASHBOARD,
-    P.VIEW_PRODUCTS,
     P.VIEW_SALES, P.CREATE_SALES,
-    P.VIEW_CUSTOMERS, P.MANAGE_CUSTOMERS,
   ],
 }
 
 // ── Helper: resolve permissions for a role string ──────────────────────────────
-// NOTE: Role-based access is DISABLED — every authenticated user gets full
-// permissions and can view everything. The per-role map above is kept only
-// for reference and is no longer used.
-export const getPermissionsForRole = (_role) => ALL
+export const getPermissionsForRole = (role) => {
+  if (!role) return []
+  return ROLE_PERMISSIONS[role] || []
+}
+
+// Default landing route per role (cashier → POS, everyone else → Dashboard)
+export const ROLE_DEFAULT_ROUTE = {
+  [ROLES.CASHIER]: '/pos',
+  [ROLES.ADMIN]:   '/',
+  [ROLES.MANAGER]: '/',
+}

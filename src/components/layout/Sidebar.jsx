@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Settings, Sparkles, X, Wallet
+  Settings, Sparkles, X, Wallet, FileText
 } from 'lucide-react'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -10,12 +10,13 @@ import AppLogo from '../shared/AppLogo'
 
 const ICON_MAP = {
   LayoutDashboard, Package, Users2, ShoppingCart,
-  Settings, Wallet,
+  Settings, Wallet, FileText,
 }
 
 const NAV = [
   { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null                },
   { path: '/pos',        label: 'POS / Sales', icon: 'ShoppingCart',                  permission: P.VIEW_SALES        },
+  { path: '/sales',      label: 'Sales History', icon: 'FileText',                    permission: P.VIEW_SALES        },
   // Finished products live in the Inventory page, so there is no separate
   // Products link in the sidebar.
   { path: '/inventory',  label: 'Inventory',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
@@ -96,15 +97,17 @@ const Sidebar = ({ alertCount = 0, isOpen, isMobile, onClose }) => {
             )
           })}
 
-          {/* Settings — always visible */}
-          <NavLink
-            to="/settings"
-            onClick={() => isMobile && onClose()}
-            style={({ isActive: navActive }) => ({ ...S.navItem, ...(navActive ? S.navItemActive : {}) })}
-          >
-            <Settings size={15} color={location.pathname === '/settings' ? '#f97316' : '#6b7280'} />
-            <span style={S.navLabel}>Settings</span>
-          </NavLink>
+          {/* Settings — admin/manager only */}
+          {can(P.MANAGE_SETTINGS) && (
+            <NavLink
+              to="/settings"
+              onClick={() => isMobile && onClose()}
+              style={({ isActive: navActive }) => ({ ...S.navItem, ...(navActive ? S.navItemActive : {}) })}
+            >
+              <Settings size={15} color={location.pathname === '/settings' ? '#f97316' : '#6b7280'} />
+              <span style={S.navLabel}>Settings</span>
+            </NavLink>
+          )}
         </nav>
 
         {/* Footer */}

@@ -29,22 +29,25 @@ export const RBACProvider = ({ children }) => {
   )
 
   // True if the user has this exact permission
-  // NOTE: Role-based access is disabled — everyone gets everything.
-  const can = () => true
+  const can = (permission) => {
+    if (!permission) return true
+    return permissions.includes(permission)
+  }
 
   // True if the user has ANY of the listed permissions
-  const canAny = () => true
+  const canAny = (...perms) => perms.some(p => can(p))
 
   // True if the user has ALL listed permissions
-  const canAll = () => true
+  const canAll = (...perms) => perms.every(p => can(p))
 
   // True if the user has exactly one of these roles
-  // NOTE: disabled — always true so all role-gated UI is visible.
-  const hasRole = () => true
+  const hasRole = (...roles) => roles.includes(role)
 
   // True if the user's role is AT LEAST as high as the given role in hierarchy
-  // NOTE: disabled — always true so all role-gated UI is visible.
-  const isAtLeast = () => true
+  const isAtLeast = (minRole) => {
+    if (!role || !minRole) return false
+    return ROLE_HIERARCHY.indexOf(role) >= ROLE_HIERARCHY.indexOf(minRole)
+  }
 
   const value = { can, canAny, canAll, hasRole, isAtLeast, role, permissions }
 

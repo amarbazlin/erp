@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { generateInvoiceNumber } from '../utils/formatters'
+import { resolveProfileId } from '../utils/profileId'
 
 export const salesService = {
   // ── Get all sales ───────────────────────────────────────────────────────────
@@ -114,6 +115,70 @@ export const salesService = {
         if (tErr) throw tErr
       }
     }
+  },
+
+  // ── Process a return for a sale item ───────────────────────────────────────
+  // Restores raw-material stock via 'return' transactions (the trigger adds
+  // stock back) and marks the sale as refunded / partially refunded.
+  processReturn: async ({ saleId, saleItemId, quantity, reason, createdBy }) => {
+    const authorId = await resolveProfileId(createdBy)
+
+    const { data: ret, error: retErr } = await supabase
+      .from('sale_returns')
+      .insert([{ sale_id: saleId, sale_item_id: saleItemId, quantity, reason, created_by: authorId }])
+      .select()
+      .single()
+    if (retErr) throw retErr
+
+    const { data: item, error: itemErr } = await supabase
+      .from('sale_items')
+      .select('product_id, quantity, products(name)')
+      .eq('id', saleItemId)
+      .single()
+    if (itemErr) throw itemErr
+
+    // Restore raw-material stock via 'return' transactions (trigger adds stock)
+    const { data: recipe, error: rErr } = await supabase
+      .from('product_recipes')
+      .select('inventory_item_id, quantity_required')
+      .eq('product_id', item.product_id)
+    if (rErr) throw rErr
+
+    for (const r of recipe || []) {
+      await supabase.from('inventory_transactions').insert([{
+        inventory_item_id: r.inventory_item_id,
+        transaction_type:  'return',
+        quantity:          parseFloat(r.quantity_required) * parseInt(quantity),
+        reference_id:      saleId,
+        notes:             `Return ${ret.id} — ${item.products?.name || ''}`,
+        created_by:        authorId,
+      }])
+    }
+
+    // Determine if this sale item is now fully returned
+    const { data: allReturns } = await supabase
+      .from('sale_returns')
+      .select('quantity')
+      .eq('sale_item_id', saleItemId)
+    const totalReturned = (allReturns || []).reduce((s, r) => s + parseInt(r.quantity), 0)
+
+    const { data: si } = await supabase
+      .from('sale_items')
+      .select('quantity')
+      .eq('id', saleItemId)
+      .single()
+    const fullyReturned = si && totalReturned >= si.quantity
+
+    await supabase
+      .from('sales')
+      .update({
+        payment_status: fullyReturned ? 'refunded' : 'partially_refunded',
+        sale_status:    fullyReturned ? 'cancelled' : 'completed',
+        updated_at:     new Date().toISOString(),
+      })
+      .eq('id', saleId)
+
+    return ret
   },
 
   // ── Dashboard summary (uses dashboard_summary view) ─────────────────────────

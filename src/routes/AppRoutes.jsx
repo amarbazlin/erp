@@ -11,6 +11,7 @@ import Login from '../pages/auth/Login'
 // Core pages
 import Dashboard      from '../pages/dashboard/Dashboard'
 import Pos            from '../pages/pos/Pos'
+import Sales          from '../pages/sales/Sales'
 // Product forms are reached from the Inventory page's Finished Products tab —
 // the standalone Products list page was removed, so there is no Products page
 // import here.
@@ -34,12 +35,15 @@ const AppRoutes = () => (
     <Route element={<ProtectedRoute />}>
       <Route element={<MainLayout />}>
 
-        {/* Dashboard — every authenticated role */}
-        <Route index element={<Dashboard />} />
+        {/* Dashboard — admin/manager; cashier lands on POS */}
+        <Route element={<RoleGuard permission={P.VIEW_DASHBOARD} redirectTo="/pos" />}>
+          <Route index element={<Dashboard />} />
+        </Route>
 
         {/* ── POS / Sales ── */}
         <Route element={<RoleGuard permission={P.VIEW_SALES} />}>
           <Route path="/pos" element={<Pos />} />
+          <Route path="/sales" element={<Sales />} />
         </Route>
 
         {/* ── Product add / edit forms ──
