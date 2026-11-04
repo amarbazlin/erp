@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
-import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X } from 'lucide-react'
+import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X, RefreshCw } from 'lucide-react'
 import { usePosProducts } from '../../hooks/useProducts'
 import { salesService, createPosSale } from '../../services/salesService'
 import { useAuth } from '../../context/AuthContext'
@@ -45,6 +45,23 @@ const Pos = () => {
     }, 250)
     return () => window.clearTimeout(timer)
   }, [receipt])
+
+  // Keep the POS stock figures fresh: raw-material stock can be added or
+  // adjusted from the Inventory page while the POS tab is open. Re-fetch the
+  // product list (with available_stock from the live DB views) whenever the
+  // user comes back to this tab or window so the "X in stock" counts and
+  // add-to-cart limits are never stale.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refetch()
+    }
+    window.addEventListener('focus', onVisible)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('focus', onVisible)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [refetch])
 
   const filtered = useMemo(() => {
     let list = products
@@ -171,6 +188,15 @@ const Pos = () => {
             <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input-base" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 34 }} />
           </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RefreshCw size={13} />}
+            onClick={() => refetch()}
+            title="Refresh available stock from inventory"
+          >
+            Refresh stock
+          </Button>
         </div>
 
         {filtered.length === 0 ? (
