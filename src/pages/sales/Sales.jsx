@@ -128,6 +128,7 @@ const Sales = () => {
       })
       notify('success', `Returned ${qty} × ${item.products?.name || 'item'}. Stock restored.`)
       setReturnTarget(null)
+      setViewTarget(null)
       setReturnForm(EMPTY_RETURN)
       await load()
     } catch (err) {
@@ -308,14 +309,6 @@ const Sales = () => {
                           onClick={() => handleViewItems(sale)}
                           title="View items"
                         />
-                        {sale.sale_status === 'completed' && (
-                          <Button
-                            variant="danger" size="sm" icon={<Trash2 size={12} />}
-                            onClick={() => handleOpenReturn(sale, null)}
-                            title="Process return"
-                            disabled={returning}
-                          />
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -346,6 +339,7 @@ const Sales = () => {
                 <th style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>Unit Price</th>
                 <th style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>Total</th>
                 <th style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>Cost</th>
+                <th style={{ padding: '10px 8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>Return</th>
               </tr>
             </thead>
             <tbody>
@@ -356,6 +350,16 @@ const Sales = () => {
                   <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: 12.5 }}>{formatCurrency(item.unit_price)}</td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: 12.5 }}>{formatCurrency(item.total_price)}</td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: 12.5, color: 'var(--text-secondary)' }}>{formatCurrency(item.total_cost || 0)}</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                    {viewTarget.sale_status === 'completed' && (
+                      <Button
+                        variant="danger" size="sm" icon={<Trash2 size={11} />}
+                        onClick={() => handleOpenReturn(viewTarget, item)}
+                        title="Process return"
+                        disabled={returning}
+                      />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
