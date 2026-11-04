@@ -10,6 +10,7 @@ import { P } from '../../utils/permissions'
 import Modal from '../../components/shared/Modal'
 import Button from '../../components/shared/Button'
 import Loader from '../../components/shared/Loader'
+import ErrorBoundary from '../../components/shared/ErrorBoundary'
 import { formatCurrency, formatDate } from '../../utils/formatters'
 
 const PAYMENT_LABELS = {
@@ -145,6 +146,7 @@ const Sales = () => {
   }
 
   return (
+      <ErrorBoundary>
     <div className="page-wrapper">
       <div className="page-header">
         <div>
@@ -419,6 +421,7 @@ const Sales = () => {
         </form>
       </Modal>
     </div>
+      </ErrorBoundary>
   )
 }
 
