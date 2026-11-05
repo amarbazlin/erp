@@ -270,12 +270,13 @@ const Sales = () => {
               </tr>
             ) : (
               filtered.map(sale => {
+                if (!sale) return null
                 const st = STATUS_COLORS[sale.sale_status] || STATUS_COLORS.completed
                 const payIcon = PAYMENT_ICONS[sale.payment_method] || Receipt
                 return (
                   <tr key={sale.id} style={{ borderBottom: '1px solid var(--card-border)', transition: 'background 0.1s' }}>
                     <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Outfit, sans-serif', fontSize: 12.5 }}>
-                      {sale.invoice_number}
+                      {sale.invoice_number || '—'}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 12.5 }}>
                       {sale?.created_at ? formatDate(new Date(sale.created_at), 'dd MMM yyyy') : '—'}
@@ -287,10 +288,10 @@ const Sales = () => {
                       {sale.users?.full_name || '—'}
                     </td>
                     <td style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-                      <payIcon size={12} color="var(--text-muted)" /> {PAYMENT_LABELS[sale.payment_method] || sale.payment_method}
+                      <payIcon size={12} color="var(--text-muted)" /> {PAYMENT_LABELS[sale?.payment_method] || sale?.payment_method || '—'}
                     </td>
                     <td style={{ padding: '12px 14px', fontWeight: 700, fontFamily: 'Outfit, sans-serif', color: 'var(--text-primary)' }}>
-                      {formatCurrency(sale.total)}
+                      {formatCurrency(sale.total || 0)}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 12.5 }}>
                       {formatCurrency(sale.total_cost || 0)}
