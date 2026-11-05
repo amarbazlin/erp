@@ -278,7 +278,7 @@ const Sales = () => {
                       {sale.invoice_number}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 12.5 }}>
-                      {formatDate(new Date(sale.created_at), 'dd MMM yyyy')}
+                      {sale?.created_at ? formatDate(new Date(sale.created_at), 'dd MMM yyyy') : '—'}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 12.5 }}>
                       {sale.customers?.full_name || 'Walk-in'}
@@ -329,7 +329,7 @@ const Sales = () => {
       >
         <div style={{ padding: '20px 24px' }}>
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 14 }}>
-            {formatDate(new Date(viewTarget.created_at), 'dd MMM yyyy, h:mm aa')} &nbsp;•&nbsp;
+            {viewTarget?.created_at ? formatDate(new Date(viewTarget.created_at), 'dd MMM yyyy, h:mm aa') : '—'} &nbsp;•&nbsp;
             {viewTarget.users?.full_name || '—'} &nbsp;•&nbsp;
             {PAYMENT_LABELS[viewTarget.payment_method] || viewTarget.payment_method}
           </p>
