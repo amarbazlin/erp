@@ -322,12 +322,13 @@ const Sales = () => {
         </table>
       </div>
 
-      <Modal
-        open={!!viewTarget}
-        onClose={() => setViewTarget(null)}
-        title={`Items — #{viewTarget?.invoice_number}`}
-        width={640}
-      >
+{viewTarget && (
+        <Modal
+          open={!!viewTarget}
+          onClose={() => setViewTarget(null)}
+          title={`Items — #{viewTarget?.invoice_number}`}
+          width={640}
+        >
         <div style={{ padding: '20px 24px' }}>
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 14 }}>
             {viewTarget?.created_at ? formatDate(new Date(viewTarget.created_at), 'dd MMM yyyy, h:mm aa') : '—'} &nbsp;•&nbsp;
@@ -375,7 +376,8 @@ const Sales = () => {
           <Button variant="secondary" onClick={() => setViewTarget(null)}>Close</Button>
         </footer>
       </Modal>
-
+      )}
+      
       <Modal
         open={!!returnTarget}
         onClose={() => setReturnTarget(null)}
