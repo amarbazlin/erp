@@ -332,7 +332,7 @@ const Sales = () => {
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginBottom: 14 }}>
             {viewTarget?.created_at ? formatDate(new Date(viewTarget.created_at), 'dd MMM yyyy, h:mm aa') : '—'} &nbsp;•&nbsp;
             {viewTarget.users?.full_name || '—'} &nbsp;•&nbsp;
-            {PAYMENT_LABELS[viewTarget.payment_method] || viewTarget.payment_method}
+            {PAYMENT_LABELS[viewTarget?.payment_method] || viewTarget?.payment_method || '—'}
           </p>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -368,7 +368,7 @@ const Sales = () => {
             </tbody>
           </table>
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', fontWeight: 700, fontSize: 14 }}>
-            Total: {formatCurrency(viewTarget.total)}
+            Total: {formatCurrency(viewTarget?.total)}
           </div>
         </div>
         <footer>
