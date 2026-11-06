@@ -93,16 +93,6 @@ const Sales = () => {
     return list
   }, [sales, search])
 
-  const totals = useMemo(() => {
-    let rev = 0, cost = 0, profit = 0
-    for (const s of filtered) {
-      rev += parseFloat(s.total || 0)
-      cost += parseFloat(s.total_cost || 0)
-      profit += parseFloat(s.total || 0) - parseFloat(s.total_cost || 0)
-    }
-    return { revenue: rev, cost, profit, orders: filtered.length }
-  }, [filtered])
-
   const handleViewItems = (sale) => setViewTarget(sale)
   const handleOpenReturn = (sale, item) => {
     setReturnTarget({ sale, item })
@@ -232,18 +222,6 @@ const Sales = () => {
             style={{ paddingLeft: 34 }}
           />
         </div>
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-        gap: 12,
-        marginBottom: 20,
-      }}>
-        <StatCard label="Total Sales" value={formatCurrency(totals.revenue)} icon={Receipt} color="#f97316" />
-        <StatCard label="Orders" value={totals.orders} icon={FileText} color="#2563eb" />
-        <StatCard label="Cost of Goods" value={formatCurrency(totals.cost)} icon={Banknote} color="#6b7280" />
-        <StatCard label="Gross Profit" value={formatCurrency(totals.profit)} icon={Check} color="#16a34a" />
       </div>
 
       <div style={{ border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)', overflow: 'hidden' }}>
@@ -427,24 +405,6 @@ const Sales = () => {
       </ErrorBoundary>
   )
 }
-
-const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div style={{
-    padding: '14px 16px', borderRadius: 10, border: '1px solid var(--card-border)',
-    background: 'var(--card-bg)', display: 'flex', alignItems: 'center', gap: 12,
-  }}>
-    <div style={{
-      width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: `${color}15`, color,
-    }}>
-      <Icon size={14} />
-    </div>
-    <div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'Outfit, sans-serif' }}>{value}</div>
-    </div>
-  </div>
-)
 
 export default Sales
 

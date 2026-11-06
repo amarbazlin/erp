@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X, RefreshCw } from 'lucide-react'
 import { usePosProducts } from '../../hooks/useProducts'
+import { useCustomers } from '../../hooks/useCustomers'
 import { salesService, createPosSale } from '../../services/salesService'
 import { useAuth } from '../../context/AuthContext'
 import { customerService } from '../../services/customerService'
@@ -23,28 +24,17 @@ const qtyBtn = {
 const Pos = () => {
     const { user, profile } = useAuth()
   const { products, loading, refetch } = usePosProducts()
+  const { customers, loading: customerLoading, refetch: refetchCustomers } = useCustomers()
 
-  const [search,        setSearch]        = useState('')
-  const [cart,          setCart]          = useState([])   // { product, quantity }
+  const [search, setSearch] = useState('')
+  const [cart, setCart] = useState([])   // { product, quantity, discount }
   const [customerPhone, setCustomerPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
-  const [discount,      setDiscount]      = useState(0)
-  const [saving,        setSaving]        = useState(false)
-  const [receipt,       setReceipt]       = useState(null)
-  const [error,         setError]         = useState(null)
-  const autoPrintedReceipt = useRef(null)
-
-  // Print only after the saved receipt is mounted. Stock refreshes must not
-  // unmount it or cause duplicate print dialogs; manual reprinting stays available.
-  useEffect(() => {
-    if (!receipt || autoPrintedReceipt.current === receipt) return
-    const timer = window.setTimeout(() => {
-      if (!document.getElementById('pos-receipt')) return
-      autoPrintedReceipt.current = receipt
-      window.print()
-    }, 250)
-    return () => window.clearTimeout(timer)
-  }, [receipt])
+  const [amountReceived, setAmountReceived] = useState('')
+  const [itemDiscounts, setItemDiscounts] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [receipt, setReceipt] = useState(null)
+  const [error, setError] = useState(null)
 
   // Keep the POS stock figures fresh: raw-material stock can be added or
   // adjusted from the Inventory page while the POS tab is open. Re-fetch the
@@ -72,8 +62,10 @@ const Pos = () => {
     return list
   }, [products, search])
 
+  // Subtotal + per-item discounts + total
   const subtotal = cart.reduce((s, c) => s + c.product.selling_price * c.quantity, 0)
-  const discountValue = Math.min(Math.max(parseFloat(discount) || 0, 0), subtotal)
+  const totalItemDiscount = Object.values(itemDiscounts || {}).reduce((s, d) => s + parseFloat(d) || 0, 0)
+  const discountValue = Math.min(Math.max(totalItemDiscount, 0), subtotal)
   const total = subtotal - discountValue
 
   const addToCart = (product) => {
@@ -86,7 +78,7 @@ const Pos = () => {
         return prev.map((c, i) => i === idx ? { ...c, quantity: c.quantity + 1 } : c)
       }
       if (max <= 0) return prev                      // out of stock
-      return [...prev, { product, quantity: 1 }]
+      return [...prev, { product, quantity: 1, discount: 0 }]
     })
   }
 
@@ -99,6 +91,14 @@ const Pos = () => {
       })
       .filter(c => c.quantity > 0)
     )
+  }
+
+  const removeFromCart = (id) => {
+    setCart(prev => prev.filter(c => c.product.id !== id))
+  }
+
+  const handleDiscountChange = (productId, value) => {
+    setItemDiscounts(prev => ({ ...prev, [productId]: parseFloat(value) || 0 }))
   }
 
   // ── Proceed: save the sale first (DB is the source of truth), then show the
@@ -117,6 +117,7 @@ const Pos = () => {
         quantity:   c.quantity,
         unit_price: c.product.selling_price,
         unit_cost:  c.product.calculated_cost || 0,
+        discount:   itemDiscounts[c.product.id] || 0,
       }))
       // Resolve (or auto-create) the customer from the entered phone number
       let resolvedCustomerId = null
@@ -164,8 +165,9 @@ const Pos = () => {
             }))
         ),
       })
-            setCart([])
-      setDiscount(0)
+          setCart([])
+      setItemDiscounts({})
+      setAmountReceived('')
       setCustomerPhone('')
       refetch()
     } catch (err) {
@@ -277,6 +279,8 @@ const Pos = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {cart.map((c) => {
                 const max = Math.floor(c.product.available_stock || 0)
+                const itemDiscount = itemDiscounts[c.product.id] || 0
+                const itemTotal = c.product.selling_price * c.quantity - itemDiscount
                 return (
                   <div key={c.product.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 8, borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--content-bg)' }}>
                     <img
@@ -287,9 +291,7 @@ const Pos = () => {
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.product.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {formatCurrency(c.product.selling_price)} each · {c.product.available_stock} in stock
-                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatCurrency(c.product.selling_price)} each · {c.product.available_stock} in stock</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
                         <button onClick={() => changeQty(c.product.id, -1)} style={{ ...qtyBtn, width: 22, height: 22 }}>
                           <Minus size={10} />
@@ -303,11 +305,25 @@ const Pos = () => {
                           <Plus size={10} />
                         </button>
                       </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Discount:</span>
+                        <input
+                          className="input-base"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={itemDiscount === 0 ? '' : itemDiscount}
+                          onChange={e => handleDiscountChange(c.product.id, e.target.value)}
+                          placeholder="0"
+                          style={{ width: 70, fontSize: 11, padding: '4px 6px' }}
+                        />
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <span style={{ display: 'block', fontSize: 13, fontFamily: 'Outfit, sans-serif', fontWeight: 800 }}>{formatCurrency(c.product.selling_price * c.quantity)}</span>
+                      <span style={{ display: 'block', fontSize: 13, fontFamily: 'Outfit, sans-serif', fontWeight: 800 }}>{formatCurrency(itemTotal)}</span>
+                      {itemDiscount > 0 && <span style={{ fontSize: 10.5, color: '#dc2626', fontWeight: 600 }}>{formatCurrency(itemDiscount)} off</span>}
                       <button
-                        onClick={() => setCart(prev => prev.filter(i => i.product.id !== c.product.id))}
+                        onClick={() => removeFromCart(c.product.id)}
                         title="Remove item"
                         style={{ ...qtyBtn, width: 22, height: 22, padding: 2, marginTop: 4, color: '#dc2626', marginLeft: 'auto' }}
                       >
@@ -326,19 +342,37 @@ const Pos = () => {
             <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Subtotal</span>
             <span style={{ fontSize: 14, fontWeight: 700 }}>{formatCurrency(subtotal)}</span>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input className="input-base" type="number" min="0" step="0.01" placeholder="Discount (Rs.)" value={discount} onChange={e => setDiscount(e.target.value)} style={{ width: 120, fontSize: 12.5 }} />
-          </div>
-          {discountValue > 0 && (
+          {totalItemDiscount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 12.5, color: '#16a34a' }}>Discount</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>−{formatCurrency(discountValue)}</span>
+              <span style={{ fontSize: 12.5, color: '#16a34a' }}>Item Discounts</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>−{formatCurrency(totalItemDiscount)}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Total</span>
             <span style={{ fontSize: 20, fontWeight: 800, color: '#f97316', fontFamily: 'Outfit, sans-serif' }}>{formatCurrency(total)}</span>
           </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input
+              className="input-base"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Amount Received"
+              value={amountReceived}
+              onChange={e => setAmountReceived(e.target.value)}
+              style={{ flex: 1, fontSize: 12.5 }}
+              inputMode="decimal"
+            />
+          </div>
+
+          {amountReceived && parseFloat(amountReceived) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--content-bg)', borderRadius: 6, border: '1px solid var(--card-border)', marginBottom: 12 }}>
+              <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Change to give back</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#16a34a' }}>{formatCurrency(Math.max(parseFloat(amountReceived) - total, 0))}</span>
+            </div>
+          )}
 
           <select className="input-base" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={{ width: '100%', marginBottom: 12, fontSize: 12.5 }}>
             {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
