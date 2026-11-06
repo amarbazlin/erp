@@ -14,13 +14,13 @@ const ICON_MAP = {
 }
 
 const NAV = [
-  { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: null                },
+  { path: '/',           label: 'Dashboard',  icon: 'LayoutDashboard', exact: true,  permission: P.VIEW_DASHBOARD                },
   { path: '/pos',        label: 'POS / Sales', icon: 'ShoppingCart',                  permission: P.VIEW_SALES        },
   { path: '/sales',      label: 'Sales History', icon: 'FileText',                    permission: P.VIEW_SALES        },
   // Finished products live in the Inventory page, so there is no separate
   // Products link in the sidebar.
   { path: '/inventory',  label: 'Inventory',  icon: 'Package',                       permission: P.VIEW_INVENTORY    },
-  { path: '/finance',     label: 'Finance',    icon: 'Wallet', permission: null },
+  { path: '/finance',     label: 'Finance',    icon: 'Wallet', permission: P.VIEW_EXPENSES },
   { path: '/customers',  label: 'Customers',  icon: 'Users2',                        permission: P.VIEW_CUSTOMERS    },
 ]
 

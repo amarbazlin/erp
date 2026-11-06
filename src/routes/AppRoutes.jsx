@@ -68,13 +68,18 @@ const AppRoutes = () => (
           <Route path="/customers/:id" element={<CustomerDetail />} />
         </Route>
 
-        <Route path="/finance" element={<Finance />} />
+        <Route element={<RoleGuard permission={P.VIEW_EXPENSES} />}>
+          <Route path="/finance" element={<Finance />} />
+        </Route>
 
         {/* Legacy Analytics links now open the unified Dashboard. */}
         <Route path="/analytics" element={<Navigate to="/" replace />} />
 
         {/* ── Settings — everyone, but tabs gated internally ── */}
-        <Route path="/settings" element={<Settings />} />
+        {/* Settings — admin/managers only */}
+        <Route element={<RoleGuard permission={P.MANAGE_SETTINGS} />}>
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
         {/* ── Access denied page ── */}
         <Route path="/access-denied" element={<AccessDenied />} />
