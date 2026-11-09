@@ -36,6 +36,11 @@ const Pos = () => {
   const [receipt, setReceipt] = useState(null)
   const [error, setError] = useState(null)
 
+  // Guard: ensure handleProceed runs only once per click
+  const proceedExecuting = useRef(false)
+  // Guard: ensure window.print() only runs once per Print button click
+  const printTriggered = useRef(false)
+
   // Keep the POS stock figures fresh: raw-material stock can be added or
   // adjusted from the Inventory page while the POS tab is open. Re-fetch the
   // product list (with available_stock from the live DB views) whenever the
@@ -109,6 +114,7 @@ const Pos = () => {
       setError('You are offline. Reconnect and refresh stock before completing a sale.')
       return
     }
+    proceedExecuting.current = true
     setSaving(true)
     setError(null)
     try {
@@ -175,6 +181,7 @@ const Pos = () => {
       setError(err.message || 'Checkout failed. Please try again.')
       refetch()
     } finally {
+      proceedExecuting.current = false
       setSaving(false)
     }
   }
@@ -449,7 +456,7 @@ const Pos = () => {
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
               <Button variant="secondary" icon={<X size={15} />} onClick={() => setReceipt(null)}>Close</Button>
-              <Button variant="primary" icon={<Printer size={15} />} onClick={() => window.print()}>Print</Button>
+              <Button variant="primary" icon={<Printer size={15} />} onClick={() => { if (printTriggered.current) return; printTriggered.current = true; window.print() }}>Print</Button>
             </div>
           </div>
         )}
