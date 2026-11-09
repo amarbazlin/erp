@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
-import { ShoppingCart, Trash2, Plus, Minus, Search, Check, Printer, X, RefreshCw } from 'lucide-react'
+import { ShoppingCart, Trash2, Plus, Minus, Search, Check, X, RefreshCw } from 'lucide-react'
 import { usePosProducts } from '../../hooks/useProducts'
 import { useCustomers } from '../../hooks/useCustomers'
 import { salesService, createPosSale } from '../../services/salesService'
@@ -40,6 +40,18 @@ const Pos = () => {
   const proceedExecuting = useRef(false)
   // Guard: ensure window.print() only runs once per Print button click
   const printTriggered = useRef(false)
+
+  // Auto-print the receipt immediately when the invoice preview modal opens
+  // (no extra click needed — the bill prints right after Proceed is clicked).
+  useEffect(() => {
+    if (!receipt || printTriggered.current) return
+    const timer = window.setTimeout(() => {
+      if (!document.getElementById('pos-receipt')) return
+      printTriggered.current = true
+      window.print()
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [receipt])
 
   // Keep the POS stock figures fresh: raw-material stock can be added or
   // adjusted from the Inventory page while the POS tab is open. Re-fetch the
@@ -243,7 +255,7 @@ const Pos = () => {
                     <div>
                       <span style={{ display: 'block', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 15, color: '#f97316' }}>{formatCurrency(p.selling_price)}</span>
                       <span style={{ fontSize: 10.5, color: out ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
-                        {out ? 'Out of stock' : `${p.available_stock} in stock`}
+                        {out ? 'Out of stock' : `Max can make: ${p.available_stock}`}
                       </span>
                     </div>
                     <button
@@ -298,7 +310,7 @@ const Pos = () => {
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.product.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatCurrency(c.product.selling_price)} each · {c.product.available_stock} in stock</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatCurrency(c.product.selling_price)} each · Max can make: {c.product.available_stock}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
                         <button onClick={() => changeQty(c.product.id, -1)} style={{ ...qtyBtn, width: 22, height: 22 }}>
                           <Minus size={10} />
@@ -456,7 +468,6 @@ const Pos = () => {
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
               <Button variant="secondary" icon={<X size={15} />} onClick={() => setReceipt(null)}>Close</Button>
-              <Button variant="primary" icon={<Printer size={15} />} onClick={() => { if (printTriggered.current) return; printTriggered.current = true; window.print() }}>Print</Button>
             </div>
           </div>
         )}
