@@ -49,10 +49,12 @@ export const analyticsService = {
     const today = businessDay()
     const historyEnd = shiftDay(today, -1)
     const historyStart = shiftDay(historyEnd, -27)
-    const [sales, history] = await Promise.all([
+    const [sales, history, costs] = await Promise.all([
       loadSalesRange(start, end), loadSalesRange(historyStart, historyEnd),
+      supabase.from('product_cost_view').select('product_id, calculated_cost'),
     ])
-    return { ...summarizeSales(sales, start, end), forecast: forecastSales(history, historyEnd) }
+    const productCosts = Object.fromEntries((costs.data || []).map(r => [r.product_id, r]))
+    return { ...summarizeSales(sales, start, end, productCosts), forecast: forecastSales(history, historyEnd) }
   },
   // Sales by payment method for a date range
   getPaymentBreakdown: async (days = 30) => {
