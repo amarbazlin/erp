@@ -20,7 +20,7 @@ export const dayBounds = (start, end) => {
 }
 const money = value => Math.round(value * 100) / 100
 const number = value => Number(value) || 0
-export const summarizeSales = (sales, start, end) => {
+export const summarizeSales = (sales, start, end, productCosts = {}) => {
   dayBounds(start, end)
   const daily = []
   for (let date = start; date <= end; date = shiftDay(date, 1)) {
@@ -33,7 +33,16 @@ export const summarizeSales = (sales, start, end) => {
   let discount = 0
   for (const sale of orders) {
     const day = byDay[businessDay(sale.created_at)]
-    const cost = (sale.sale_items || []).reduce((sum, item) => sum + number(item.total_cost), 0)
+    // Prefer live recipe cost from product_cost_view; fall back to stored total_cost
+    let cost = 0
+    if (productCosts && Object.keys(productCosts).length > 0) {
+      for (const item of sale.sale_items || []) {
+        const pc = productCosts[item.product_id]
+        cost += number(pc ? pc.calculated_cost : 0) * number(item.quantity)
+      }
+    } else {
+      cost = (sale.sale_items || []).reduce((sum, item) => sum + number(item.total_cost), 0)
+    }
     day.revenue += number(sale.total)
     day.cost += cost
     // Taxes collected are not restaurant profit. This is gross profit, before expenses.
