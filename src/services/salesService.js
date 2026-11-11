@@ -233,6 +233,52 @@ export const salesService = {
       .slice(0, limit)
   },
 
+  // ── Delete a sale ───────────────────────────────────────────────────────────
+  // Deletes the sale and its sale_items (cascade) and restores the raw-material
+  // stock that was deducted during the sale by inserting 'return'
+  // inventory_transactions for each recipe ingredient.
+  deleteSale: async (id) => {
+    const { data: sale, error: loadErr } = await supabase
+      .from('sales')
+      .select('*, sale_items(id, quantity, unit_price, unit_cost, total_price, total_cost, products(id, name, sku, image_url))')
+      .eq('id', id)
+      .single()
+    if (loadErr) throw loadErr
+    if (!sale) throw new Error('Sale not found.')
+
+    // Restore raw-material stock that was deducted during the sale
+    const items = sale.sale_items || []
+    for (const item of items) {
+      const { data: recipes, error: rErr } = await supabase
+        .from('product_recipes')
+        .select('inventory_item_id, quantity_required')
+        .eq('product_id', item.product_id)
+      if (rErr) throw rErr
+
+      for (const r of recipes || []) {
+        const { error: tErr } = await supabase
+          .from('inventory_transactions')
+          .insert([{
+            inventory_item_id: r.inventory_item_id,
+            transaction_type: 'return',
+            quantity: parseFloat(r.quantity_required) * parseInt(item.quantity),
+            reference_id: sale.id,
+            notes: `Return — sale deleted #${sale.invoice_number} · ${item.products?.name || 'item'}`,
+          }])
+        if (tErr) throw tErr
+      }
+    }
+
+    // Delete the sale row (sale_items cascade; inventory already restored above)
+    const { error: delErr } = await supabase
+      .from('sales')
+      .delete()
+      .eq('id', id)
+    if (delErr) throw delErr
+
+    return true
+  },
+
   // ── Payment methods (matches DB constraint) ─────────────────────────────────
   PAYMENT_METHODS: ['cash', 'card', 'bank_transfer', 'online'],
 }

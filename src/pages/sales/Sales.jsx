@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import {
   Search, Calendar, FileText, RefreshCw, Plus, Minus, Trash2, AlertTriangle,
-  Check, ChevronRight, Receipt, CreditCard, Banknote
+  Check, ChevronRight, Receipt, CreditCard, Banknote, Printer
 } from 'lucide-react'
 import { salesService } from '../../services/salesService'
+import { generateReceiptPDF } from '../../services/invoiceService'
 import { useAuth } from '../../context/AuthContext'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -46,6 +47,9 @@ const Sales = () => {
   const [returnTarget, setReturnTarget] = useState(null)
   const [returnForm, setReturnForm] = useState(EMPTY_RETURN)
   const [returning, setReturning] = useState(false)
+
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const [message, setMessage] = useState(null)
 
@@ -99,6 +103,12 @@ const Sales = () => {
     setReturnForm({ quantity: String(item.quantity), reason: '' })
   }
 
+  const handlePrintBill = (sale) => {
+    generateReceiptPDF(sale)
+  }
+
+  const handleOpenDelete = (sale) => setDeleteTarget(sale)
+
   const handleProcessReturn = async (e) => {
     e.preventDefault()
     if (!returnTarget) return
@@ -126,6 +136,21 @@ const Sales = () => {
       notify('error', err.message || 'Return failed.')
     } finally {
       setReturning(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await salesService.deleteSale(deleteTarget.id)
+      notify('success', `Sale #${deleteTarget.invoice_number} deleted. Stock restored.`)
+      setDeleteTarget(null)
+      await load()
+    } catch (err) {
+      notify('error', err.message || 'Delete failed.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -224,8 +249,8 @@ const Sales = () => {
         </div>
       </div>
 
-      <div style={{ border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <div style={{ border: '1px solid var(--card-border)', borderRadius: 12, background: 'var(--card-bg)', overflow: 'auto', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: '1100px' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--card-border)' }}>
               <th style={{ padding: '12px 14px', color: 'var(--text-muted)', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>Invoice</th>
@@ -289,6 +314,18 @@ const Sales = () => {
                           variant="ghost" size="sm" icon={<FileText size={12} />}
                           onClick={() => handleViewItems(sale)}
                           title="View items"
+                        />
+                        <Button
+                          variant="ghost" size="sm" icon={<Printer size={12} />}
+                          onClick={() => handlePrintBill(viewTarget)}
+                          title="Print bill"
+                          disabled={deleting || !!deleteTarget || !viewTarget}
+                        />
+                        <Button
+                          variant="ghost" size="sm" icon={<Trash2 size={12} />}
+                          onClick={() => handleOpenDelete(sale)}
+                          title="Delete sale"
+                          disabled={deleting || !!deleteTarget}
                         />
                       </div>
                     </td>
@@ -400,6 +437,24 @@ const Sales = () => {
             <Button variant="danger" type="submit" loading={returning} disabled={returning}>Process Return</Button>
           </footer>
         </form>
+      </Modal>
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Sale"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="danger" loading={deleting} disabled={deleting} onClick={handleDelete}>
+              Delete sale
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 0 }}>
+          Permanently delete sale{' '}
+          <strong>#{deleteTarget?.invoice_number || '—'}</strong>? This action cannot be undone and the raw materials used in the sale will be restored to inventory.
+        </p>
       </Modal>
     </div>
       </ErrorBoundary>
