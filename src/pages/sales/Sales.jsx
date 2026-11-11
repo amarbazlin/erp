@@ -297,7 +297,9 @@ const Sales = () => {
                       {formatCurrency(sale.total || 0)}
                     </td>
                     <td style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontSize: 12.5 }}>
-                      {formatCurrency(sale.total_cost || 0)}
+                      {sale.sale_items
+                        ? formatCurrency(sale.sale_items.reduce((sum, item) => sum + (item.total_cost || 0), 0))
+                        : '—'}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{
@@ -317,9 +319,9 @@ const Sales = () => {
                         />
                         <Button
                           variant="ghost" size="sm" icon={<Printer size={12} />}
-                          onClick={() => handlePrintBill(viewTarget)}
+                          onClick={() => handlePrintBill(sale)}
                           title="Print bill"
-                          disabled={deleting || !!deleteTarget || !viewTarget}
+                          disabled={deleting || !!deleteTarget}
                         />
                         <Button
                           variant="ghost" size="sm" icon={<Trash2 size={12} />}

@@ -240,7 +240,7 @@ export const salesService = {
   deleteSale: async (id) => {
     const { data: sale, error: loadErr } = await supabase
       .from('sales')
-      .select('*, sale_items(id, quantity, unit_price, unit_cost, total_price, total_cost, products(id, name, sku, image_url))')
+      .select('*, sale_items(id, quantity, unit_price, unit_cost, total_price, total_cost, product_id, products(id, name, sku, image_url))')
       .eq('id', id)
       .single()
     if (loadErr) throw loadErr
