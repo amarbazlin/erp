@@ -107,10 +107,6 @@ const Sales = () => {
   const handlePrintBill = (sale) => {
     generateReceiptPDF(sale)
   }
-
-      .replace(/<\/body>/i, '');
-
-    // Create print area if not already in DOM, populate and print
   const handleProcessReturn = async (e) => {
     e.preventDefault()
     if (!returnTarget) return
