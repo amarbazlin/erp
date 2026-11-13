@@ -103,9 +103,14 @@ const Sales = () => {
     setReturnForm({ quantity: String(item.quantity), reason: '' })
   }
 
+  const printTriggered = useRef(false);
+
   const handlePrintBill = (sale) => {
-    generateReceiptPDF(sale)
-  }
+    if (printTriggered.current) return;
+    printTriggered.current = true;
+    generateReceiptPDF(sale);
+    setTimeout(() => { printTriggered.current = false; }, 1500);
+  };
 
   const handleOpenDelete = (sale) => setDeleteTarget(sale)
 
