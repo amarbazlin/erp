@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useRef } from 'react'
 import {
   Search, Calendar, FileText, RefreshCw, Plus, Minus, Trash2, AlertTriangle,
   Check, ChevronRight, Receipt, CreditCard, Banknote, Printer

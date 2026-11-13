@@ -25,6 +25,8 @@ export const generateReceiptHTML = (sale) => {
       <title>Receipt ${sale.invoice_number}</title>
       <style>
         .thermal-receipt {
+          @page { size: 80mm auto; margin: 0; }
+          body { margin: 0; padding: 0; }
           box-sizing: border-box;
           width: 80mm;
           max-width: 100%;
@@ -47,8 +49,9 @@ export const generateReceiptHTML = (sale) => {
           line-height: 1.2;
           margin-bottom: 4px;
           text-transform: none;
+          text-align: center;
         }
-        .thermal-receipt .tr-muted { font-size: 11px; color: #000; }
+        .thermal-receipt .tr-muted { font-size: 11px; color: #000; text-align: center; }
         .thermal-receipt .tr-divider {
           border-top: 1px dashed #000;
           margin: 4px 0;
@@ -115,14 +118,33 @@ export const generateReceiptHTML = (sale) => {
 }
 
 
+let printWin = null;
+
 export const generateReceiptPDF = (sale) => {
-  const win = window.open('', '_blank', 'width=420,height=640')
-  if (!win) { alert('Please allow popups to print receipts'); return }
-  win.document.write(generateReceiptHTML(sale))
-  win.document.close()
-  win.focus()
-  win.print()
-}
+  // Open/reuse a single print window, and delay printing until the new
+  // document is ready so the browser never opens a second window.
+  if (printWin && !printWin.closed) {
+    printWin.focus();
+    printWin.document.open();
+    printWin.document.write(generateReceiptHTML(sale));
+    printWin.document.close();
+    setTimeout(() => { if (!printWin.closed) printWin.print(); }, 250);
+    return;
+  }
+
+  const win = window.open('', '_blank', 'width=420,height=640');
+  if (!win) {
+    alert('Please allow popups to print receipts');
+    return;
+  }
+  printWin = win;
+  win.document.write(generateReceiptHTML(sale));
+  win.document.close();
+  win.focus();
+  setTimeout(() => {
+    if (!win.closed) win.print();
+  }, 250);
+};
 
 // Keep legacy names used elsewhere
 export const generateInvoicePDF = generateReceiptPDF
