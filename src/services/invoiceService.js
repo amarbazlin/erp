@@ -31,8 +31,7 @@ export const generateReceiptHTML = (sale) => {
           width: 80mm;
           max-width: 100%;
           margin: 0 auto;
-          --receipt-right-padding: calc(7mm + 3ch);
-          padding: 4mm var(--receipt-right-padding) 4mm 3mm;
+          padding: 3mm 4mm 2mm 4mm;
           background: #fff;
           color: #000;
           font-family: 'Courier New', Courier, monospace;
@@ -43,70 +42,125 @@ export const generateReceiptHTML = (sale) => {
         }
         .thermal-receipt .tr-shop {
           font-family: 'Arial Black', Arial, sans-serif;
-          font-size: 22px;
+          font-size: 24px;
           font-weight: 900;
           color: #000;
-          line-height: 1.2;
-          margin-bottom: 4px;
           text-transform: none;
           text-align: center;
+          margin: 0 0 2px 0;
         }
-        .thermal-receipt .tr-muted { font-size: 11px; color: #000; text-align: center; }
+        .thermal-receipt .tr-muted {
+          font-size: 11px;
+          color: #000;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          text-align: center;
+          margin: 0 0 4px 0;
+        }
         .thermal-receipt .tr-divider {
-          border-top: 1px dashed #000;
-          margin: 4px 0;
+          height: 0;
+          border-top: 1px solid #000;
+          margin: 3px 0;
         }
+        .thermal-receipt .tr-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0 18px;
+          margin: 0 0 3px 0;
+        }
+        .thermal-receipt .tr-meta-item {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          min-width: 64px;
+        }
+        .thermal-receipt .tr-meta-label {
+          font-size: 10px;
+          color: #000;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .thermal-receipt .tr-meta-value {
+          font-weight: 700;
+          font-size: 12px;
+        }
+        .thermal-receipt .tr-items {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 2px 0 3px 0;
+        }
+        .thermal-receipt .tr-items th {
+          background: #000;
+          color: #fff;
+          font-size: 10px;
+          text-align: left;
+          padding: 3px 4px;
+          font-weight: 700;
+        }
+        .thermal-receipt .tr-items th.num { text-align: center; }
+        .thermal-receipt .tr-items td {
+          padding: 3px 4px;
+          border-bottom: 1px dotted #000;
+          font-size: 12px;
+        }
+        .thermal-receipt .tr-items tbody tr:last-child td { border-bottom: none; }
+        .thermal-receipt .tr-items .num { text-align: right; }
+        .thermal-receipt .tr-totals {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 2px 0;
+        }
+        .thermal-receipt .tr-totals .num { text-align: right; }
         .thermal-receipt .tr-row {
           display: flex;
           justify-content: space-between;
-          gap: 6px;
-        }
-        .thermal-receipt .tr-row span:first-child { flex-shrink: 0; }
-        .thermal-receipt .tr-row span:last-child {
-          min-width: 0;
-          text-align: right;
-          overflow-wrap: anywhere;
-        }
-        .thermal-receipt .tr-total {
-          font-size: 15px;
-          font-weight: 700;
+          gap: 12px;
           margin: 2px 0;
         }
-        .thermal-receipt table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 2px 0; }
-        .thermal-receipt th, .thermal-receipt td { overflow-wrap: anywhere; }
-        .thermal-receipt th:first-child { width: 36%; }
-        .thermal-receipt th:nth-child(2) { width: 12%; }
-        .thermal-receipt th:nth-child(3), .thermal-receipt th:nth-child(4) { width: 26%; }
-        .thermal-receipt th { font-weight: 700; border-bottom: 1px solid #000; padding: 2px 0; }
-        .thermal-receipt td { padding: 2px 0; vertical-align: top; }
+        .thermal-receipt .tr-row span:first-child { flex-shrink: 0; }
+        .thermal-receipt .tr-row .num { text-align: right; }
+        .thermal-receipt .tr-grand {
+          font-size: 15px;
+          font-weight: 900;
+          border-top: 1px solid #000;
+          padding-top: 3px;
+          margin-top: 3px;
+        }
+        .thermal-receipt .tr-grand .num { text-align: right; }
       </style>
     </head>
     <body>
       <div class="thermal-receipt">
         <div class="tr-shop">KAH Laban</div>
-        <div class="tr-muted">— Sale Receipt —</div>
+        <div class="tr-muted">INVOICE</div>
+
+        <div class="tr-meta">
+          <div class="tr-meta-item"><span class="tr-meta-label">Invoice No.</span><span class="tr-meta-value">${sale.invoice_number || '—'}</span></div>
+          <div class="tr-meta-item"><span class="tr-meta-label">Date</span><span class="tr-meta-value">${new Date(sale.created_at || '').toLocaleString()}</span></div>
+          <div class="tr-meta-item"><span class="tr-meta-label">Cashier</span><span class="tr-meta-value">${sale.users?.full_name || '—'}</span></div>
+          <div class="tr-meta-item"><span class="tr-meta-label">Customer</span><span class="tr-meta-value">${sale.customers ? sale.customers.full_name : 'Walk-in'}</span></div>
+        </div>
+
         <div class="tr-divider"></div>
-        <div class="tr-row"><span>Order No.</span><span>${sale.invoice_number || '—'}</span></div>
-        <div class="tr-row"><span>Date</span><span>${new Date(sale.created_at || '').toLocaleString()}</span></div>
-        <div class="tr-row"><span>Cashier</span><span>${sale.users?.full_name || '—'}</span></div>
-        <div class="tr-row"><span>Customer</span><span>${sale.customers ? sale.customers.full_name : 'Walk-in'}</span></div>
         <div class="tr-divider"></div>
-        <table>
+        <table class="tr-items">
           <thead>
             <tr>
               <th>Item</th>
-              <th style="text-align:center">Qty</th>
-              <th style="text-align:right">Price</th>
-              <th style="text-align:right">Total</th>
+              <th class="num">Qty</th>
+              <th class="num">Price</th>
+              <th class="num">Total</th>
             </tr>
           </thead>
           <tbody>${items}</tbody>
         </table>
         <div class="tr-divider"></div>
-        <div class="tr-row"><span>Subtotal</span><span>${money(sale.subtotal)}</span></div>
-        ${parseFloat(sale.discount) > 0 ? `<div class="tr-row"><span>Discount</span><span>−${money(sale.discount)}</span></div>` : ''}
-        ${parseFloat(sale.tax) > 0 ? `<div class="tr-row"><span>Tax</span><span>${money(sale.tax)}</span></div>` : ''}
-        <div class="tr-row tr-total"><span>TOTAL</span><span>${money(sale.total)}</span></div>
+
+        <div class="tr-totals"><span>Subtotal</span><span class="num">${money(sale.subtotal)}</span></div>
+        ${parseFloat(sale.discount) > 0 ? `<div class="tr-totals"><span>Discount</span><span class="num">−${money(sale.discount)}</span></div>` : ''}
+        ${parseFloat(sale.tax) > 0 ? `<div class="tr-totals"><span>Tax</span><span class="num">${money(sale.tax)}</span></div>` : ''}
+        <div class="tr-grand"><span>Total</span><span class="num">${money(sale.total)}</span></div>
         <div class="tr-row"><span>Payment</span><span>${{
           cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer', online: 'Online'
         }[sale.payment_method] || sale.payment_method}</span></div>
