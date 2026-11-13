@@ -4,7 +4,7 @@ import {
   Check, ChevronRight, Receipt, CreditCard, Banknote, Printer
 } from 'lucide-react'
 import { salesService } from '../../services/salesService'
-import { generateReceiptPDF } from '../../services/invoiceService'
+import { generateReceiptPDF, generateReceiptHTML } from '../../services/invoiceService'
 import { useAuth } from '../../context/AuthContext'
 import { useRBAC } from '../../context/RBACContext'
 import { P } from '../../utils/permissions'
@@ -105,11 +105,50 @@ const Sales = () => {
 
   const printTriggered = useRef(false);
 
+  // Print area element that stays within the current browser window
+  const printAreaRef = useRef(document.createElement('div'));
+
   const handlePrintBill = (sale) => {
     if (printTriggered.current) return;
     printTriggered.current = true;
-    generateReceiptPDF(sale);
-    setTimeout(() => { printTriggered.current = false; }, 1500);
+
+    // Generate receipt HTML and strip the html/head/body wrapper
+    const fullHTML = generateReceiptHTML(sale);
+    const bodyHTML = fullHTML
+      .replace(/^<html>[\s\S]*<\/html>$/i, '')
+      .replace(/<head>[\s\S]*<\/head>/i, '')
+      .replace(/<body[^>]*>/i, '')
+      .replace(/<\/body>/i, '');
+
+    // Create print area if not already in DOM, populate and print
+    const printArea = printAreaRef.current;
+    printArea.id = 'print-receipt-area';
+    printArea.style.position = 'absolute';
+    printArea.style.width = '80mm';
+    printArea.style.margin = '0 auto';
+    printArea.style.padding = '3mm 4mm 2mm 4mm';
+    printArea.style.fontFamily = "'Courier New', Courier, monospace";
+    printArea.style.fontSize = '12px';
+    printArea.style.background = '#fff';
+    printArea.style.color = '#000';
+
+    // Generate and insert receipt HTML (body only)
+    printArea.innerHTML = bodyHTML;
+
+    // Replace body content temporarily, print, then restore
+    const originalBody = document.body.innerHTML;
+    document.body.innerHTML = '';
+    document.body.appendChild(printArea);
+    printArea.scrollIntoView({ behavior: 'smooth' });
+
+    setTimeout(() => {
+      window.print();
+      // Restore original content after print dialog closes
+      setTimeout(() => {
+        document.body.innerHTML = originalBody;
+        printTriggered.current = false;
+      }, 500);
+    }, 100);
   };
 
   const handleOpenDelete = (sale) => setDeleteTarget(sale)
