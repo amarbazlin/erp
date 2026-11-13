@@ -80,7 +80,7 @@ export const generateReceiptHTML = (sale) => {
     </head>
     <body>
       <div class="thermal-receipt">
-        <div class="tr-shop">${import.meta.env && import.meta.env.VITE_BUSINESS_NAME || 'Sweet Restaurant'}</div>
+        <div class="tr-shop">KAH Laban</div>
         <div class="tr-muted">— Sale Receipt —</div>
         <div class="tr-divider"></div>
         <div class="tr-row"><span>Order No.</span><span>${sale.invoice_number || '—'}</span></div>
