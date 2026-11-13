@@ -143,7 +143,6 @@ export const generateReceiptHTML = (sale) => {
         </div>
 
         <div class="tr-divider"></div>
-        <div class="tr-divider"></div>
         <table class="tr-items">
           <thead>
             <tr>
